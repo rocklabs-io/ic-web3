@@ -32,6 +32,8 @@ pub mod error;
 pub mod signing;
 pub mod transports;
 pub mod types;
+pub mod ic;
+// pub mod tx_helpers;
 
 pub use crate::{
     api::Web3,

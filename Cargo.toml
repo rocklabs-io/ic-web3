@@ -20,6 +20,8 @@ arrayvec = "0.7.1"
 derive_more = "0.99.1"
 ethabi = { git = "https://github.com/rocklabs-io/ethabi" }
 ethereum-types = { git = "https://github.com/rocklabs-io/parity-common" }
+libsecp256k1 = { git = "https://github.com/rocklabs-io/libsecp256k1", branch = "master" }
+ethereum-tx-sign = { git = "https://github.com/rocklabs-io/ethereum-tx-sign", branch = "master" }
 futures = "0.3.5"
 futures-timer = "3.0.2"
 hex = "0.4"
