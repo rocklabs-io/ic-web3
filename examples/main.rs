@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{self, json, Value};
 use std::cell::{RefCell, RefMut};
 use hex::FromHex;
+use ic_web3::transports::ICHttp;
+use ic_web3::Web3;
 // use ethereum_tx_sign::{LegacyTransaction, Transaction};
 // use ic_web3::model::{Block, JsonRpcResult};
 // use ic_web3::web3::Web3;
@@ -15,6 +17,8 @@ use hex::FromHex;
 const URL: &str = "https://eth-goerli.g.alchemy.com/v2/0QCHDmgIEFRV48r1U1QbtOyFInib3ZAm";
 const CHAIN_ID: u64 = 5;
 const KEY_NAME: &str = "dfx_test_key";
+
+type Result<T, E> = std::result::Result<T, E>;
 
 // #[update(name = "get_eth_block")]
 // #[candid_method(update, rename = "get_eth_block")]
@@ -28,9 +32,9 @@ const KEY_NAME: &str = "dfx_test_key";
 async fn get_eth_gas_price() -> Result<String, String> {
     // let w3: Web3 = Web3::new(URL.to_string(), None);
     // w3.eth_gas_price().await
-    let ic_http = web3::transports::ICHttp::new(URL, None).map_err(|e| "init ic http transport failed".to_string())?;
-    let web3 = web3::Web3::new(ic_http);
-    let gas_price = web3.eth().gas_price().await.map_err(|e| format!("get gas price failed: {}", e))?;
+    let ic_http = ICHttp::new(URL, None).map_err(|e| "init ic http transport failed".to_string())?;
+    let w3 = Web3::new(ic_http);
+    let gas_price = w3.eth().gas_price().await.map_err(|e| format!("get gas price failed: {}", e))?;
     ic_cdk::println!("gas price: {}", gas_price);
     Ok(format!("{}", gas_price))
 }

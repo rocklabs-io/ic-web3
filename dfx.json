@@ -2,7 +2,7 @@
   "canisters": {
     "eth": {
       "candid": "examples/ic_web3.did",
-      "package": "ic-web3",
+	  "package": "ic-web3",
       "type": "rust",
       "wasm": "target/wasm32-unknown-unknown/release/ic_web3.wasm",
       "build": [

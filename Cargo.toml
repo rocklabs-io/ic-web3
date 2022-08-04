@@ -11,11 +11,15 @@ authors = ["Tomasz Drwięga <tomasz@parity.io>"]
 readme = "README.md"
 edition = "2018"
 
+[[bin]]
+name = "ic-web3"
+path = "examples/main.rs"
+
 [dependencies]
 arrayvec = "0.7.1"
 derive_more = "0.99.1"
-ethabi = "17.0.0"
-ethereum-types = "0.13.0"
+ethabi = { git = "https://github.com/rocklabs-io/ethabi" }
+ethereum-types = { git = "https://github.com/rocklabs-io/parity-common" }
 futures = "0.3.5"
 futures-timer = "3.0.2"
 hex = "0.4"
@@ -56,10 +60,10 @@ url = { version = "2.1", optional = true }
 ## EIP-1193
 js-sys = { version = "0.3.45", optional = true }
 ### This is a transitive dependency, only here so we can turn on its wasm_bindgen feature
-rand = { version = "0.8.1", optional = true }
-getrandom = { version = "0.2", features = ["js"], optional = true }
-wasm-bindgen = { version = "0.2.68", optional = true, features = ["serde-serialize"] }
-wasm-bindgen-futures = { version = "0.4.18", optional = true }
+# rand = { version = "0.7.3", optional = true }
+# getrandom = { version = "0.2.3", features = ["js"], optional = true }
+# wasm-bindgen = { version = "0.2.68", optional = true, features = ["serde-serialize"] }
+# wasm-bindgen-futures = { version = "0.4.18", optional = true }
 
 [dev-dependencies]
 # For examples
@@ -73,8 +77,8 @@ tokio = { version = "1.0", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["net"] }
 
 [features]
-default = ["wasm"]
-wasm = ["js-sys", "wasm-bindgen", "wasm-bindgen-futures", "futures-timer/wasm-bindgen", "rand", "getrandom"]
+# default = ["wasm"]
+# wasm = ["js-sys", "wasm-bindgen", "wasm-bindgen-futures", "futures-timer/wasm-bindgen", "rand", "getrandom"]
 # eip-1193 = ["wasm"]
 _http_base = ["reqwest", "bytes", "url", "base64", "headers"]
 http = ["_http_base"]
