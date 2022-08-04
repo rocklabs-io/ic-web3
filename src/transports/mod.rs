@@ -11,6 +11,11 @@ pub mod http;
 #[cfg(any(feature = "http", feature = "http-rustls"))]
 pub use self::http::Http;
 
+pub mod ic_http_client;
+pub use self::ic_http_client::ICHttpClient;
+pub mod ic_http;
+pub use self::ic_http::ICHttp;
+
 #[cfg(any(feature = "ws-tokio", feature = "ws-async-std"))]
 pub mod ws;
 #[cfg(any(feature = "ws-tokio", feature = "ws-async-std"))]

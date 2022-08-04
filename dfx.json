@@ -1,0 +1,21 @@
+{
+  "canisters": {
+    "eth": {
+      "candid": "examples/ic_web3.did",
+      "package": "ic-web3",
+      "type": "rust",
+      "wasm": "target/wasm32-unknown-unknown/release/ic_web3.wasm",
+      "build": [
+        "cargo build --target wasm32-unknown-unknown --example main --release",
+        "ic-cdk-optimizer target/wasm32-unknown-unknown/release/ic_web3.wasm -o target/wasm32-unknown-unknown/release/ic_web3_opt.wasm"
+      ]
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  },
+  "version": 1
+}

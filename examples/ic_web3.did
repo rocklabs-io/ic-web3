@@ -1,0 +1,2 @@
+type Result = variant { Ok : text; Err : text };
+service : { get_eth_gas_price : () -> (Result) }
