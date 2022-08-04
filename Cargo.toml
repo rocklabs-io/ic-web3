@@ -1,13 +1,13 @@
 [package]
 name = "ic-web3"
-version = "0.19.0"
+version = "0.1.0"
 description = "Ethereum JSON-RPC client."
-homepage = "https://github.com/tomusdrw/rust-web3"
-repository = "https://github.com/tomusdrw/rust-web3"
-documentation = "https://docs.rs/web3"
+homepage = "https://github.com/rocklabs-io/ic-web3"
+repository = "https://github.com/rocklabs-io/ic-web3"
+documentation = "https://docs.rs/ic-web3"
 license = "MIT"
-keywords = ["jsonrpc", "web3", "ethereum", "rpc", "client"]
-authors = ["Tomasz Drwięga <tomasz@parity.io>"]
+keywords = ["dfinity", "icp", "jsonrpc", "web3", "ethereum", "rpc", "client"]
+authors = ["Tomasz Drwięga <tomasz@parity.io>", "Rocklabs <hello@rocklabs.io>"]
 readme = "README.md"
 edition = "2018"
 
