@@ -23,6 +23,12 @@ struct EcdsaKeyId {
     pub name: String,
 }
 
+#[derive(CandidType, Serialize, Debug, Clone)]
+struct KeyInfo {
+    pub derivation_path: Vec<Vec<u8>>,
+    pub key_name: String,
+}
+
 #[derive(CandidType, Serialize, Debug)]
 struct ECDSAPublicKey {
     pub canister_id: Option<Principal>,

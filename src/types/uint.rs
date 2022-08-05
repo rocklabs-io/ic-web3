@@ -1,4 +1,9 @@
 pub use ethereum_types::{BigEndianHash, Bloom as H2048, H128, H160, H256, H512, H520, H64, U128, U256, U64};
+// pub use ethereum_types::{
+//     BigEndianHash, Bloom as H2048, H512, H520, H64, U64
+// };
+// pub use primitive_types::{U128, U256, U512};
+// pub use primitive_types::{H128, H160, H256};
 
 #[cfg(test)]
 mod tests {

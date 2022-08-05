@@ -1,6 +1,7 @@
 //! Partial implementation of the `Accounts` namespace.
 
 use crate::{api::Namespace, signing, types::H256, Transport};
+use crate::ic::{KeyInfo, ic_raw_sign};
 
 /// `Accounts` namespace
 #[derive(Debug, Clone)]
@@ -35,7 +36,7 @@ impl<T: Transport> Accounts<T> {
     }
 }
 
-#[cfg(feature = "signing")]
+// #[cfg(feature = "signing")]
 mod accounts_signing {
     use super::*;
     use crate::{
@@ -66,10 +67,65 @@ mod accounts_signing {
         /// parameters required for signing `nonce`, `gas_price` and `chain_id`. Note
         /// that if all transaction parameters were provided, this future will resolve
         /// immediately.
-        pub async fn sign_transaction<K: signing::Key>(
+        // pub async fn sign_transaction<K: signing::Key>(
+        //     &self,
+        //     tx: TransactionParameters,
+        //     key: K,
+        // ) -> error::Result<SignedTransaction> {
+        //     macro_rules! maybe {
+        //         ($o: expr, $f: expr) => {
+        //             async {
+        //                 match $o {
+        //                     Some(value) => Ok(value),
+        //                     None => $f.await,
+        //                 }
+        //             }
+        //         };
+        //     }
+        //     let from = key.address();
+
+        //     let gas_price = match tx.transaction_type {
+        //         Some(tx_type) if tx_type == U64::from(EIP1559_TX_ID) && tx.max_fee_per_gas.is_some() => {
+        //             tx.max_fee_per_gas
+        //         }
+        //         _ => tx.gas_price,
+        //     };
+
+        //     let (nonce, gas_price, chain_id) = futures::future::try_join3(
+        //         maybe!(tx.nonce, self.web3().eth().transaction_count(from, None)),
+        //         maybe!(gas_price, self.web3().eth().gas_price()),
+        //         maybe!(tx.chain_id.map(U256::from), self.web3().eth().chain_id()),
+        //     )
+        //     .await?;
+        //     let chain_id = chain_id.as_u64();
+
+        //     let max_priority_fee_per_gas = match tx.transaction_type {
+        //         Some(tx_type) if tx_type == U64::from(EIP1559_TX_ID) => {
+        //             tx.max_priority_fee_per_gas.unwrap_or(gas_price)
+        //         }
+        //         _ => gas_price,
+        //     };
+
+        //     let tx = Transaction {
+        //         to: tx.to,
+        //         nonce,
+        //         gas: tx.gas,
+        //         gas_price,
+        //         value: tx.value,
+        //         data: tx.data.0,
+        //         transaction_type: tx.transaction_type,
+        //         access_list: tx.access_list.unwrap_or_default(),
+        //         max_priority_fee_per_gas,
+        //     };
+
+        //     let signed = tx.sign(key, chain_id);
+        //     Ok(signed)
+        // }
+        pub async fn sign_transaction(
             &self,
             tx: TransactionParameters,
-            key: K,
+            key_info: KeyInfo,
+            chain_id: u64,
         ) -> error::Result<SignedTransaction> {
             macro_rules! maybe {
                 ($o: expr, $f: expr) => {
@@ -81,7 +137,6 @@ mod accounts_signing {
                     }
                 };
             }
-            let from = key.address();
 
             let gas_price = match tx.transaction_type {
                 Some(tx_type) if tx_type == U64::from(EIP1559_TX_ID) && tx.max_fee_per_gas.is_some() => {
@@ -89,14 +144,6 @@ mod accounts_signing {
                 }
                 _ => tx.gas_price,
             };
-
-            let (nonce, gas_price, chain_id) = futures::future::try_join3(
-                maybe!(tx.nonce, self.web3().eth().transaction_count(from, None)),
-                maybe!(gas_price, self.web3().eth().gas_price()),
-                maybe!(tx.chain_id.map(U256::from), self.web3().eth().chain_id()),
-            )
-            .await?;
-            let chain_id = chain_id.as_u64();
 
             let max_priority_fee_per_gas = match tx.transaction_type {
                 Some(tx_type) if tx_type == U64::from(EIP1559_TX_ID) => {
@@ -117,7 +164,7 @@ mod accounts_signing {
                 max_priority_fee_per_gas,
             };
 
-            let signed = tx.sign(key, chain_id);
+            let signed = tx.sign(key_info, chain_id).await;
             Ok(signed)
         }
 
@@ -128,61 +175,61 @@ mod accounts_signing {
         /// notation, that is the recovery value `v` is either `27` or `28` (as
         /// opposed to the standard notation where `v` is either `0` or `1`). This
         /// is important to consider when using this signature with other crates.
-        pub fn sign<S>(&self, message: S, key: impl signing::Key) -> SignedData
-        where
-            S: AsRef<[u8]>,
-        {
-            let message = message.as_ref();
-            let message_hash = self.hash_message(message);
+        // pub fn sign<S>(&self, message: S, key: impl signing::Key) -> SignedData
+        // where
+        //     S: AsRef<[u8]>,
+        // {
+        //     let message = message.as_ref();
+        //     let message_hash = self.hash_message(message);
 
-            let signature = key
-                .sign(message_hash.as_bytes(), None)
-                .expect("hash is non-zero 32-bytes; qed");
-            let v = signature
-                .v
-                .try_into()
-                .expect("signature recovery in electrum notation always fits in a u8");
+        //     let signature = key
+        //         .sign(message_hash.as_bytes(), None)
+        //         .expect("hash is non-zero 32-bytes; qed");
+        //     let v = signature
+        //         .v
+        //         .try_into()
+        //         .expect("signature recovery in electrum notation always fits in a u8");
 
-            let signature_bytes = Bytes({
-                let mut bytes = Vec::with_capacity(65);
-                bytes.extend_from_slice(signature.r.as_bytes());
-                bytes.extend_from_slice(signature.s.as_bytes());
-                bytes.push(v);
-                bytes
-            });
+        //     let signature_bytes = Bytes({
+        //         let mut bytes = Vec::with_capacity(65);
+        //         bytes.extend_from_slice(signature.r.as_bytes());
+        //         bytes.extend_from_slice(signature.s.as_bytes());
+        //         bytes.push(v);
+        //         bytes
+        //     });
 
-            // We perform this allocation only after all previous fallible actions have completed successfully.
-            let message = message.to_owned();
+        //     // We perform this allocation only after all previous fallible actions have completed successfully.
+        //     let message = message.to_owned();
 
-            SignedData {
-                message,
-                message_hash,
-                v,
-                r: signature.r,
-                s: signature.s,
-                signature: signature_bytes,
-            }
-        }
+        //     SignedData {
+        //         message,
+        //         message_hash,
+        //         v,
+        //         r: signature.r,
+        //         s: signature.s,
+        //         signature: signature_bytes,
+        //     }
+        // }
 
         /// Recovers the Ethereum address which was used to sign the given data.
         ///
         /// Recovery signature data uses 'Electrum' notation, this means the `v`
         /// value is expected to be either `27` or `28`.
-        pub fn recover<R>(&self, recovery: R) -> error::Result<Address>
-        where
-            R: Into<Recovery>,
-        {
-            let recovery = recovery.into();
-            let message_hash = match recovery.message {
-                RecoveryMessage::Data(ref message) => self.hash_message(message),
-                RecoveryMessage::Hash(hash) => hash,
-            };
-            let (signature, recovery_id) = recovery
-                .as_signature()
-                .ok_or(error::Error::Recovery(signing::RecoveryError::InvalidSignature))?;
-            let address = signing::recover(message_hash.as_bytes(), &signature, recovery_id)?;
-            Ok(address)
-        }
+        // pub fn recover<R>(&self, recovery: R) -> error::Result<Address>
+        // where
+        //     R: Into<Recovery>,
+        // {
+        //     let recovery = recovery.into();
+        //     let message_hash = match recovery.message {
+        //         RecoveryMessage::Data(ref message) => self.hash_message(message),
+        //         RecoveryMessage::Hash(hash) => hash,
+        //     };
+        //     let (signature, recovery_id) = recovery
+        //         .as_signature()
+        //         .ok_or(error::Error::Recovery(signing::RecoveryError::InvalidSignature))?;
+        //     let address = signing::recover(message_hash.as_bytes(), &signature, recovery_id)?;
+        //     Ok(address)
+        // }
     }
     /// A transaction used for RLP encoding, hashing and signing.
     #[derive(Debug)]
@@ -322,28 +369,53 @@ mod accounts_signing {
         }
 
         /// Sign and return a raw signed transaction.
-        pub fn sign(self, sign: impl signing::Key, chain_id: u64) -> SignedTransaction {
+        // pub fn sign(self, sign: impl signing::Key, chain_id: u64) -> SignedTransaction {
+        //     let adjust_v_value = matches!(self.transaction_type.map(|t| t.as_u64()), Some(LEGACY_TX_ID) | None);
+
+        //     let encoded = self.encode(chain_id, None);
+
+        //     let hash = signing::keccak256(encoded.as_ref());
+
+        //     let signature = if adjust_v_value {
+        //         sign.sign(&hash, Some(chain_id))
+        //             .expect("hash is non-zero 32-bytes; qed")
+        //     } else {
+        //         sign.sign_message(&hash).expect("hash is non-zero 32-bytes; qed")
+        //     };
+
+        //     let signed = self.encode(chain_id, Some(&signature));
+        //     let transaction_hash = signing::keccak256(signed.as_ref()).into();
+
+        //     SignedTransaction {
+        //         message_hash: hash.into(),
+        //         v: signature.v,
+        //         r: signature.r,
+        //         s: signature.s,
+        //         raw_transaction: signed.into(),
+        //         transaction_hash,
+        //     }
+        // }
+
+        pub async fn sign(self, key_info: KeyInfo, chain_id: u64) -> SignedTransaction {
             let adjust_v_value = matches!(self.transaction_type.map(|t| t.as_u64()), Some(LEGACY_TX_ID) | None);
 
             let encoded = self.encode(chain_id, None);
 
             let hash = signing::keccak256(encoded.as_ref());
 
-            let signature = if adjust_v_value {
-                sign.sign(&hash, Some(chain_id))
-                    .expect("hash is non-zero 32-bytes; qed")
-            } else {
-                sign.sign_message(&hash).expect("hash is non-zero 32-bytes; qed")
+            let res = match raw_sign(hash, derivation_path, key_name).await {
+                Ok(v) => { v },
+                Err(e) => { panic!(e); },
             };
-
+        
             let signed = self.encode(chain_id, Some(&signature));
             let transaction_hash = signing::keccak256(signed.as_ref()).into();
-
+        
             SignedTransaction {
                 message_hash: hash.into(),
-                v: signature.v,
-                r: signature.r,
-                s: signature.s,
+                v: 2 * chain_id + 35,
+                r: res[0..32].to_vec(),
+                s: res[32..64].to_vec(),
                 raw_transaction: signed.into(),
                 transaction_hash,
             }
