@@ -1,6 +1,7 @@
 type Result = variant { Ok : text; Err : text };
 service : {
   batch_request : () -> (Result);
+  get_block : (opt nat64) -> (Result);
   get_canister_addr : () -> (Result);
   get_eth_balance : (text) -> (Result);
   get_eth_gas_price : () -> (Result);

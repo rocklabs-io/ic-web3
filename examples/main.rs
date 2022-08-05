@@ -7,8 +7,8 @@ use ic_web3::Web3;
 use ic_web3::ic::{get_eth_addr, KeyInfo};
 use ic_web3::{
     contract::{Contract, Options},
-    ethabi::ethereum_types::U256,
-    types::{Address, TransactionParameters},
+    ethabi::ethereum_types::{U64, U256},
+    types::{Address, TransactionParameters, BlockId, BlockNumber, Block},
 };
 
 // const url = "https://eth-mainnet.g.alchemy.com/v2/UZzgeJY-eQAovXu7aupjTx062NdxBNuB";
@@ -22,19 +22,22 @@ const TOKEN_ABI: &[u8] = include_bytes!("../src/contract/res/token.json");
 
 type Result<T, E> = std::result::Result<T, E>;
 
-// #[update(name = "get_eth_block")]
-// #[candid_method(update, rename = "get_eth_block")]
-// async fn get_eth_block() -> Result<Block, String> {
-//     // let w3: Web3 = Web3::new(URL.to_string(), None);
-//     // w3.eth_get_block_by_number("latest").await
-//     let w3 = match ICHttp::new(URL, None) {
-//         Ok(v) => { Web3::new(v) },
-//         Err(e) => { return Err(e.to_string()) },
-//     };
-//     let gas_price = w3.eth().gas_price().await.map_err(|e| format!("get gas price failed: {}", e))?;
-//     ic_cdk::println!("gas price: {}", gas_price);
-//     Ok(format!("{}", gas_price))
-// }
+#[update(name = "get_block")]
+#[candid_method(update, rename = "get_block")]
+async fn get_block(number: Option<u64>) -> Result<String, String> {
+    let w3 = match ICHttp::new(URL, None) {
+        Ok(v) => { Web3::new(v) },
+        Err(e) => { return Err(e.to_string()) },
+    };
+    let block_id = match number {
+        Some(id) => { BlockId::from(U64::from(id)) },
+        None => { BlockId::Number(BlockNumber::Latest) },
+    };
+    let block = w3.eth().block(block_id).await.map_err(|e| format!("get block error: {}", e))?;
+    ic_cdk::println!("block: {:?}", block.unwrap());
+
+    Ok("done".into())
+}
 
 #[update(name = "get_eth_gas_price")]
 #[candid_method(update, rename = "get_eth_gas_price")]
