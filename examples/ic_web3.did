@@ -4,4 +4,6 @@ service : {
   get_eth_balance : (text) -> (Result);
   get_eth_gas_price : () -> (Result);
   send_eth : (text, nat64) -> (Result);
+  send_token : (text, text, nat64) -> (Result);
+  token_balance : (text, text) -> (Result);
 }

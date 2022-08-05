@@ -10,13 +10,13 @@ use std::str::FromStr;
 use ic_web3::transports::ICHttp;
 use ic_web3::Web3;
 use ic_web3::ic::{get_eth_addr, get_public_key, KeyInfo};
-// use ic_web3::tx_helpers::ic_sign;
 use ic_web3::{
+    contract::{Contract, Options},
     ethabi::ethereum_types::U256,
     types::{Address, TransactionRequest, TransactionParameters},
 };
 
-//const url = "https://eth-mainnet.g.alchemy.com/v2/UZzgeJY-eQAovXu7aupjTx062NdxBNuB";
+// const url = "https://eth-mainnet.g.alchemy.com/v2/UZzgeJY-eQAovXu7aupjTx062NdxBNuB";
 // goerli testnet
 const URL: &str = "https://eth-goerli.g.alchemy.com/v2/0QCHDmgIEFRV48r1U1QbtOyFInib3ZAm";
 const CHAIN_ID: u64 = 5;
@@ -55,7 +55,7 @@ async fn get_eth_gas_price() -> Result<String, String> {
 #[candid_method(update, rename = "get_canister_addr")]
 async fn get_canister_addr() -> Result<String, String> {
     match get_eth_addr(None, None, KEY_NAME.to_string()).await {
-        Ok(addr) => { Ok("0x".to_string() + &hex::encode(addr.to_vec())) },
+        Ok(addr) => { Ok(hex::encode(addr)) },
         Err(e) => { Err(e) },
     }
 }
@@ -77,26 +77,23 @@ async fn get_eth_balance(addr: String) -> Result<String, String> {
 async fn send_eth(to: String, value: u64) -> Result<String, String> {
     // ecdsa key info
     let derivation_path = vec![ic_cdk::caller().as_slice().to_vec()];
+    let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string() };
 
     // get canister eth address
-    let from_addr = match get_eth_addr(None, None, "dfx_test_key".to_string()).await {
-        Ok(addr) => { "0x".to_string() + &hex::encode(addr.to_vec()) },
-        Err(e) => { return Err(e); },
-    };
+    let from_addr = get_eth_addr(None, None, KEY_NAME.to_string())
+        .await
+        .map_err(|e| format!("get canister eth addr failed: {}", e))?;
     // get canister the address tx count
     let w3 = match ICHttp::new(URL, None) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
-    let tx_count = match w3.eth().transaction_count(Address::from_str(&from_addr).unwrap(), None).await {
-        Ok(v) => { 
-            // ic_cdk::println!("tx count: {}", v);
-            // u128::from_str_radix(&v.trim_start_matches("0x"), 16).unwrap()
-            v // U256
-        },
-        Err(e) => { return Err("get tx count error".into()); },
-    };
-    ic_cdk::println!("canister eth address {} tx count: {}", from_addr, tx_count);
+    let tx_count = w3.eth()
+        .transaction_count(from_addr, None)
+        .await
+        .map_err(|e| format!("get tx count error: {}", e))?;
+        
+    ic_cdk::println!("canister eth address {} tx count: {}", hex::encode(from_addr), tx_count);
     // construct a transaction
     let to = Address::from_str(&to).unwrap();
     let tx = TransactionParameters {
@@ -108,8 +105,10 @@ async fn send_eth(to: String, value: u64) -> Result<String, String> {
         ..Default::default()
     };
     // sign the transaction and get serialized transaction + signature
-    let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string() };
-    let signed_tx = w3.accounts().sign_transaction(tx, key_info, CHAIN_ID).await.expect("sign tx error");
+    let signed_tx = w3.accounts()
+        .sign_transaction(tx, key_info, CHAIN_ID)
+        .await
+        .map_err(|e| format!("sign tx error: {}", e))?;
     match w3.eth().send_raw_transaction(signed_tx.raw_transaction).await {
         Ok(txhash) => { 
             ic_cdk::println!("txhash: {}", hex::encode(txhash.0));
@@ -119,13 +118,70 @@ async fn send_eth(to: String, value: u64) -> Result<String, String> {
     }
 }
 
-// call a contract, query & update
-// #[update(name = "eth_call")]
-// #[candid_method(update, rename = "eth_call")]
-// async fn eth_call(data: Value) -> Result<String, String> {
-//     let w3: Web3 = Web3::new(URL.to_string(), None);
-//     w3.eth_call(data).await
-// }
+// query a contract, token balance
+#[update(name = "token_balance")]
+#[candid_method(update, rename = "token_balance")]
+async fn token_balance(contract_addr: String, addr: String) -> Result<String, String> {
+    // goerli weth: 0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6
+    // account: 0x9c9fcF808B82e5fb476ef8b7A1F5Ad61Dc597625
+    let w3 = match ICHttp::new(URL, None) {
+        Ok(v) => { Web3::new(v) },
+        Err(e) => { return Err(e.to_string()) },
+    };
+    let contract_address = Address::from_str(&contract_addr).unwrap();
+    let contract = Contract::from_json(
+        w3.eth(),
+        contract_address,
+        include_bytes!("../src/contract/res/token.json"),
+    ).map_err(|e| format!("init contract failed: {}", e))?;
+
+    let addr = Address::from_str(&addr).unwrap();
+    let balance: U256 = contract
+        .query("balanceOf", (addr,), None, Options::default(), None)
+        .await
+        .map_err(|e| format!("query contract error: {}", e))?;
+    ic_cdk::println!("balance of {} is {}", addr, balance);
+    Ok(format!("{}", balance))
+}
+
+// call a contract, transfer some token to addr
+#[update(name = "send_token")]
+#[candid_method(update, rename = "send_token")]
+async fn send_token(token_addr: String, addr: String, value: u64) -> Result<String, String> {
+    // ecdsa key info
+    let derivation_path = vec![ic_cdk::caller().as_slice().to_vec()];
+    let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string() };
+
+    let w3 = match ICHttp::new(URL, None) {
+        Ok(v) => { Web3::new(v) },
+        Err(e) => { return Err(e.to_string()) },
+    };
+    let contract_address = Address::from_str(&token_addr).unwrap();
+    let contract = Contract::from_json(
+        w3.eth(),
+        contract_address,
+        include_bytes!("../src/contract/res/token.json"),
+    ).map_err(|e| format!("init contract failed: {}", e))?;
+
+    let canister_addr = get_eth_addr(None, None, KEY_NAME.to_string())
+        .await
+        .map_err(|e| format!("get canister eth addr failed: {}", e))?;
+    // add nonce to options
+    let tx_count = w3.eth()
+        .transaction_count(canister_addr, None)
+        .await
+        .map_err(|e| format!("get tx count error: {}", e))?;
+    let options = Options::with(|op| { op.nonce = Some(tx_count) });
+    let to_addr = Address::from_str(&addr).unwrap();
+    let txhash = contract
+        .signed_call("transfer", (to_addr, value,), options, key_info, CHAIN_ID)
+        .await
+        .map_err(|e| format!("token transfer failed: {}", e))?;
+
+    ic_cdk::println!("txhash: {}", hex::encode(txhash));
+
+    Ok(format!("{}", hex::encode(txhash)))
+}
 
 
 fn main() {

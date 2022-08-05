@@ -147,16 +147,16 @@ mod accounts_signing {
 
             let max_priority_fee_per_gas = match tx.transaction_type {
                 Some(tx_type) if tx_type == U64::from(EIP1559_TX_ID) => {
-                    tx.max_priority_fee_per_gas.unwrap_or(gas_price.unwrap())
+                    tx.max_priority_fee_per_gas.unwrap_or(gas_price.unwrap_or_default())
                 }
-                _ => gas_price.unwrap(),
+                _ => gas_price.unwrap_or_default(),
             };
 
             let tx = Transaction {
                 to: tx.to,
                 nonce: tx.nonce.unwrap(),
                 gas: tx.gas,
-                gas_price: gas_price.unwrap(),
+                gas_price: gas_price.unwrap_or_default(),
                 value: tx.value,
                 data: tx.data.0,
                 transaction_type: tx.transaction_type,

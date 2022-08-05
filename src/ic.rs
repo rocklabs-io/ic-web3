@@ -4,11 +4,12 @@ use ic_cdk::export::{
     Principal,
 };
 use std::str::FromStr;
+use crate::types::Address;
 use libsecp256k1::{PublicKey, PublicKeyFormat};
 use ethereum_tx_sign::{EcdsaSig, keccak256_hash};
 
 const ECDSA_SIGN_CYCLES : u64 = 10_000_000_000;
-pub type Address = [u8; 20];
+// pub type Address = [u8; 20];
 
 #[derive(CandidType, Serialize, Debug, Clone)]
 pub enum EcdsaCurve {
@@ -86,7 +87,7 @@ pub fn pubkey_to_address(pubkey: &[u8]) -> Result<Address, String> {
     let hash = keccak256_hash(&uncompressed_pubkey[1..65]);
 	let mut result = [0u8; 20];
 	result.copy_from_slice(&hash[12..]);
-	Ok(result)
+	Ok(Address::from(result))
 }
 
 pub async fn get_eth_addr(

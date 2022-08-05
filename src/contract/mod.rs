@@ -10,6 +10,7 @@ use crate::{
         TransactionRequest, H256, U256, U64,
     },
     Transport,
+    ic::KeyInfo,
 };
 use std::{collections::HashMap, hash::Hash, time};
 
@@ -325,7 +326,7 @@ impl<T: Transport> Contract<T> {
     }
 }
 
-#[cfg(feature = "signing")]
+// #[cfg(feature = "signing")]
 mod contract_signing {
     use super::*;
     use crate::{
@@ -340,7 +341,8 @@ mod contract_signing {
             func: &str,
             params: impl Tokenize,
             options: Options,
-            key: impl signing::Key,
+            key_info: KeyInfo,
+            chain_id: u64,
         ) -> crate::Result<SignedTransaction> {
             let fn_data = self
                 .abi
@@ -367,7 +369,7 @@ mod contract_signing {
             if let Some(value) = options.value {
                 tx.value = value;
             }
-            accounts.sign_transaction(tx, key).await
+            accounts.sign_transaction(tx, key_info, chain_id).await
         }
 
         /// Submit contract call transaction to the transaction pool.
@@ -379,35 +381,36 @@ mod contract_signing {
             func: &str,
             params: impl Tokenize,
             options: Options,
-            key: impl signing::Key,
+            key_info: KeyInfo,
+            chain_id: u64,
         ) -> crate::Result<H256> {
-            let signed = self.sign(func, params, options, key).await?;
+            let signed = self.sign(func, params, options, key_info, chain_id).await?;
             self.eth.send_raw_transaction(signed.raw_transaction).await
         }
 
-        /// Submit contract call transaction to the transaction pool and wait for the transaction to be included in a block.
-        ///
-        /// This function will wait for block inclusion of the transaction before returning.
+        // Submit contract call transaction to the transaction pool and wait for the transaction to be included in a block.
+        //
+        // This function will wait for block inclusion of the transaction before returning.
         // If you'd rather just submit transaction and receive it's hash, please use [`signed_call`] instead.
-        pub async fn signed_call_with_confirmations(
-            &self,
-            func: &str,
-            params: impl Tokenize,
-            options: Options,
-            confirmations: usize,
-            key: impl signing::Key,
-        ) -> crate::Result<TransactionReceipt> {
-            let poll_interval = time::Duration::from_secs(1);
-            let signed = self.sign(func, params, options, key).await?;
+        // pub async fn signed_call_with_confirmations(
+        //     &self,
+        //     func: &str,
+        //     params: impl Tokenize,
+        //     options: Options,
+        //     confirmations: usize,
+        //     key: impl signing::Key,
+        // ) -> crate::Result<TransactionReceipt> {
+        //     let poll_interval = time::Duration::from_secs(1);
+        //     let signed = self.sign(func, params, options, key).await?;
 
-            confirm::send_raw_transaction_with_confirmation(
-                self.eth.transport().clone(),
-                signed.raw_transaction,
-                poll_interval,
-                confirmations,
-            )
-            .await
-        }
+        //     confirm::send_raw_transaction_with_confirmation(
+        //         self.eth.transport().clone(),
+        //         signed.raw_transaction,
+        //         poll_interval,
+        //         confirmations,
+        //     )
+        //     .await
+        // }
     }
 }
 
