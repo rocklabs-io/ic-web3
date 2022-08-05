@@ -44,11 +44,6 @@ ic-cdk = "0.5.0"
 ic-cdk-macros = "0.5.0"
 candid = "0.7.14"
 
-#uint-crate = { path = "../parity-common/uint", package = "uint", version = "0.9", default-features = false }
-#impl-serde = { path = "../parity-common/primitive-types/impls/serde", version = "0.3.2", default-features = false, optional = true }
-#impl-rlp = { path = "../parity-common/primitive-types/impls/rlp", version = "0.3", default-features = false, optional = true }
-#impl-codec = { version = "0.6.0", path = "../parity-common/primitive-types/impls/codec", default-features = false, optional = true }
-
 # Optional deps
 # secp256k1 = { version = "0.21", features = ["recovery"], optional = true }
 # once_cell = { version = "1.8.0", optional = true }
@@ -72,8 +67,8 @@ url = { version = "2.1", optional = true }
 ## EIP-1193
 js-sys = { version = "0.3.45", optional = true }
 ### This is a transitive dependency, only here so we can turn on its wasm_bindgen feature
-rand = { version = "0.7.3", optional = true }
-getrandom = { version = "0.2.3", features = ["js"], optional = true }
+rand = { version = "0.8.1", optional = true }
+getrandom = { version = "0.2", features = ["custom"] }
 wasm-bindgen = { version = "0.2.68", optional = true, features = ["serde-serialize"] }
 wasm-bindgen-futures = { version = "0.4.18", optional = true }
 
