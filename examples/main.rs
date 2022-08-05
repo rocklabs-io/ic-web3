@@ -13,7 +13,9 @@ use ic_web3::{
 
 // const url = "https://eth-mainnet.g.alchemy.com/v2/UZzgeJY-eQAovXu7aupjTx062NdxBNuB";
 // goerli testnet
-const URL: &str = "https://eth-goerli.g.alchemy.com/v2/0QCHDmgIEFRV48r1U1QbtOyFInib3ZAm";
+// const URL: &str = "https://eth-goerli.g.alchemy.com/v2/0QCHDmgIEFRV48r1U1QbtOyFInib3ZAm";
+// infura api
+const URL: &str = "https://goerli.infura.io/v3/93ca33aa55d147f08666ac82d7cc69fd";
 const CHAIN_ID: u64 = 5;
 const KEY_NAME: &str = "dfx_test_key";
 const TOKEN_ABI: &[u8] = include_bytes!("../src/contract/res/token.json");
@@ -72,7 +74,7 @@ async fn get_eth_balance(addr: String) -> Result<String, String> {
 #[candid_method(update, rename = "send_eth")]
 async fn send_eth(to: String, value: u64) -> Result<String, String> {
     // ecdsa key info
-    let derivation_path = vec![ic_cdk::caller().as_slice().to_vec()];
+    let derivation_path = vec![ic_cdk::id().as_slice().to_vec()];
     let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string() };
 
     // get canister eth address
@@ -145,7 +147,7 @@ async fn token_balance(contract_addr: String, addr: String) -> Result<String, St
 #[candid_method(update, rename = "send_token")]
 async fn send_token(token_addr: String, addr: String, value: u64) -> Result<String, String> {
     // ecdsa key info
-    let derivation_path = vec![ic_cdk::caller().as_slice().to_vec()];
+    let derivation_path = vec![ic_cdk::id().as_slice().to_vec()];
     let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string() };
 
     let w3 = match ICHttp::new(URL, None) {

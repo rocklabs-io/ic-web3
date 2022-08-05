@@ -98,7 +98,7 @@ pub async fn get_eth_addr(
     derivation_path: Option<Vec<Vec<u8>>>,
     name: String
 ) -> Result<Address, String> {
-    let path = if let Some(v) = derivation_path { v } else { vec![ic_cdk::caller().as_slice().to_vec()] };
+    let path = if let Some(v) = derivation_path { v } else { vec![ic_cdk::id().as_slice().to_vec()] };
     match get_public_key(canister_id, path, name).await {
         Ok(pubkey) => { return pubkey_to_address(&pubkey); },
         Err(e) => { return Err(e); },
