@@ -69,6 +69,25 @@ async fn get_eth_balance(addr: String) -> Result<String, String> {
     Ok(format!("{}", balance))
 }
 
+// #[update(name = "batch_request")]
+// #[candid_method(update, rename = "batch_request")]
+// async fn batch_request() -> Result<String, String> {
+//     let http = web3::transports::Http::new("http://localhost:8545")?;
+//     let web3 = web3::Web3::new(web3::transports::Batch::new(http));
+
+//     let accounts = web3.eth().accounts();
+//     let block = web3.eth().block_number();
+
+//     let result = web3.transport().submit_batch().await?;
+//     println!("Result: {:?}", result);
+
+//     let accounts = accounts.await?;
+//     println!("Accounts: {:?}", accounts);
+
+//     let block = block.await?;
+//     println!("Block: {:?}", block);
+// }
+
 // send tx
 #[update(name = "send_eth")]
 #[candid_method(update, rename = "send_eth")]
