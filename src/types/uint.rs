@@ -1,34 +1,5 @@
 pub use ethereum_types::{BigEndianHash, Bloom as H2048, H128, H160, H256, H512, H520, H64, U128, U256, U64};
-// pub use ethereum_types::{
-//     BigEndianHash, Bloom as H2048, H512, H520, H64, U64
-// };
-// pub use primitive_types::{U128, U256, U512};
-// pub use primitive_types::{H128, H160, H256};
 
-// extern crate impl_codec;
-// extern crate impl_rlp;
-// extern crate impl_serde;
-
-// // #[cfg(feature = "codec")]
-// use impl_codec::impl_uint_codec;
-// // #[cfg(feature = "rlp")]
-// use impl_rlp::impl_uint_rlp;
-// // #[cfg(feature = "serialize")]
-// use impl_serde::impl_uint_serde;
-// use uint_crate::*;
-
-// pub use uint_crate::{FromDecStrErr, FromStrRadixErr, FromStrRadixErrKind};
-
-// construct_uint! {
-// 	/// Unsigned 64-bit integer.
-// 	pub struct U256(4);
-// }
-// #[cfg(feature = "rlp")]
-// impl_uint_rlp!(U256, 4);
-// #[cfg(feature = "serialize")]
-// impl_uint_serde!(U256, 4);
-// #[cfg(feature = "codec")]
-// impl_uint_codec!(U256, 4);
 
 #[cfg(test)]
 mod tests {
