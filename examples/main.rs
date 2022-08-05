@@ -69,24 +69,30 @@ async fn get_eth_balance(addr: String) -> Result<String, String> {
     Ok(format!("{}", balance))
 }
 
-// #[update(name = "batch_request")]
-// #[candid_method(update, rename = "batch_request")]
-// async fn batch_request() -> Result<String, String> {
-//     let http = web3::transports::Http::new("http://localhost:8545")?;
-//     let web3 = web3::Web3::new(web3::transports::Batch::new(http));
+#[update(name = "batch_request")]
+#[candid_method(update, rename = "batch_request")]
+async fn batch_request() -> Result<String, String> {
+    let http = ICHttp::new(URL, None).map_err(|e| format!("init ICHttp failed: {}", e))?;
+    let w3 = Web3::new(ic_web3::transports::Batch::new(http));
 
-//     let accounts = web3.eth().accounts();
-//     let block = web3.eth().block_number();
+    let block_number = w3.eth().block_number();
+    let gas_price = w3.eth().gas_price();
+    let balance = w3.eth().balance(Address::from([0u8; 20]), None);
 
-//     let result = web3.transport().submit_batch().await?;
-//     println!("Result: {:?}", result);
+    let result = w3.transport().submit_batch().await.map_err(|e| format!("batch request err: {}", e))?;
+    ic_cdk::println!("batch request result: {:?}", result);
 
-//     let accounts = accounts.await?;
-//     println!("Accounts: {:?}", accounts);
+    let block_number = block_number.await.map_err(|e| format!("get block number err: {}", e))?;
+    ic_cdk::println!("block number: {:?}", block_number);
 
-//     let block = block.await?;
-//     println!("Block: {:?}", block);
-// }
+    let gas_price = gas_price.await.map_err(|e| format!("get gas price err: {}", e))?;
+    ic_cdk::println!("gas price: {:?}", gas_price);
+
+    let balance = balance.await.map_err(|e| format!("get balance err: {}", e))?;
+    ic_cdk::println!("balance: {:?}", balance);
+
+    Ok("done".into())
+}
 
 // send tx
 #[update(name = "send_eth")]
