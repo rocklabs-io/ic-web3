@@ -61,12 +61,12 @@ mod accounts_signing {
             Web3::new(self.transport.clone())
         }
 
-        /// Signs an Ethereum transaction with a given private key.
-        ///
-        /// Transaction signing can perform RPC requests in order to fill missing
-        /// parameters required for signing `nonce`, `gas_price` and `chain_id`. Note
-        /// that if all transaction parameters were provided, this future will resolve
-        /// immediately.
+        // Signs an Ethereum transaction with a given private key.
+        //
+        // Transaction signing can perform RPC requests in order to fill missing
+        // parameters required for signing `nonce`, `gas_price` and `chain_id`. Note
+        // that if all transaction parameters were provided, this future will resolve
+        // immediately.
         // pub async fn sign_transaction<K: signing::Key>(
         //     &self,
         //     tx: TransactionParameters,
@@ -147,16 +147,16 @@ mod accounts_signing {
 
             let max_priority_fee_per_gas = match tx.transaction_type {
                 Some(tx_type) if tx_type == U64::from(EIP1559_TX_ID) => {
-                    tx.max_priority_fee_per_gas.unwrap_or(gas_price)
+                    tx.max_priority_fee_per_gas.unwrap_or(gas_price.unwrap())
                 }
-                _ => gas_price,
+                _ => gas_price.unwrap(),
             };
 
             let tx = Transaction {
                 to: tx.to,
-                nonce,
+                nonce: tx.nonce.unwrap(),
                 gas: tx.gas,
-                gas_price,
+                gas_price: gas_price.unwrap(),
                 value: tx.value,
                 data: tx.data.0,
                 transaction_type: tx.transaction_type,
@@ -168,13 +168,13 @@ mod accounts_signing {
             Ok(signed)
         }
 
-        /// Sign arbitrary string data.
-        ///
-        /// The data is UTF-8 encoded and enveloped the same way as with
-        /// `hash_message`. The returned signed data's signature is in 'Electrum'
-        /// notation, that is the recovery value `v` is either `27` or `28` (as
-        /// opposed to the standard notation where `v` is either `0` or `1`). This
-        /// is important to consider when using this signature with other crates.
+        // Sign arbitrary string data.
+        //
+        // The data is UTF-8 encoded and enveloped the same way as with
+        // `hash_message`. The returned signed data's signature is in 'Electrum'
+        // notation, that is the recovery value `v` is either `27` or `28` (as
+        // opposed to the standard notation where `v` is either `0` or `1`). This
+        // is important to consider when using this signature with other crates.
         // pub fn sign<S>(&self, message: S, key: impl signing::Key) -> SignedData
         // where
         //     S: AsRef<[u8]>,
@@ -211,10 +211,10 @@ mod accounts_signing {
         //     }
         // }
 
-        /// Recovers the Ethereum address which was used to sign the given data.
-        ///
-        /// Recovery signature data uses 'Electrum' notation, this means the `v`
-        /// value is expected to be either `27` or `28`.
+        // Recovers the Ethereum address which was used to sign the given data.
+        //
+        // Recovery signature data uses 'Electrum' notation, this means the `v`
+        // value is expected to be either `27` or `28`.
         // pub fn recover<R>(&self, recovery: R) -> error::Result<Address>
         // where
         //     R: Into<Recovery>,
@@ -403,19 +403,30 @@ mod accounts_signing {
 
             let hash = signing::keccak256(encoded.as_ref());
 
-            let res = match raw_sign(hash, derivation_path, key_name).await {
+            let res = match ic_raw_sign(hash.to_vec(), key_info.derivation_path, key_info.key_name).await {
                 Ok(v) => { v },
-                Err(e) => { panic!(e); },
+                Err(e) => { panic!("{}", e); },
+            };
+
+            let v = 2 * chain_id + 35;
+            let mut r_arr = [0u8; 32];
+            let mut s_arr = [0u8; 32];
+            r_arr.copy_from_slice(&res[0..32]);
+            s_arr.copy_from_slice(&res[32..64]);
+            let sig = Signature {
+                v,
+                r: r_arr.clone().into(),
+                s: s_arr.clone().into()
             };
         
-            let signed = self.encode(chain_id, Some(&signature));
+            let signed = self.encode(chain_id, Some(&sig));
             let transaction_hash = signing::keccak256(signed.as_ref()).into();
         
             SignedTransaction {
                 message_hash: hash.into(),
                 v: 2 * chain_id + 35,
-                r: res[0..32].to_vec(),
-                s: res[32..64].to_vec(),
+                r: r_arr.into(),
+                s: s_arr.into(),
                 raw_transaction: signed.into(),
                 transaction_hash,
             }

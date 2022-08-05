@@ -24,7 +24,7 @@ struct EcdsaKeyId {
 }
 
 #[derive(CandidType, Serialize, Debug, Clone)]
-struct KeyInfo {
+pub struct KeyInfo {
     pub derivation_path: Vec<Vec<u8>>,
     pub key_name: String,
 }
