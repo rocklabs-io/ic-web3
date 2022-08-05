@@ -4,15 +4,16 @@ use ic_cdk_macros::{self, heartbeat, post_upgrade, pre_upgrade, query, update};
 use serde::{Deserialize, Serialize};
 use serde_json::{self, json, Value};
 use std::cell::{RefCell, RefMut};
-use hex::FromHex;
+use hex::{FromHex, ToHex};
+use std::str::FromStr;
 
 use ic_web3::transports::ICHttp;
 use ic_web3::Web3;
-use ic_web3::ic::{get_eth_addr, get_public_key};
+use ic_web3::ic::{get_eth_addr, get_public_key, KeyInfo};
 // use ic_web3::tx_helpers::ic_sign;
 use ic_web3::{
     ethabi::ethereum_types::U256,
-    types::{Address, TransactionRequest},
+    types::{Address, TransactionRequest, TransactionParameters},
 };
 
 //const url = "https://eth-mainnet.g.alchemy.com/v2/UZzgeJY-eQAovXu7aupjTx062NdxBNuB";
@@ -59,15 +60,64 @@ async fn get_canister_addr() -> Result<String, String> {
     }
 }
 
-// #[update(name = "get_eth_balance")]
-// #[candid_method(update, rename = "get_eth_balance")]
-// async fn get_eth_balance(addr: String) -> Result<u64, String> {
-//     let w3: Web3 = Web3::new(URL.to_string(), None);
-//     match w3.eth_get_balance(&addr, None).await {
-//         Ok(v) => { Ok(u64::from_str_radix(&v.trim_start_matches("0x"), 16).unwrap()) },
-//         Err(e) => { Err(e) },
-//     }
-// }
+#[update(name = "get_eth_balance")]
+#[candid_method(update, rename = "get_eth_balance")]
+async fn get_eth_balance(addr: String) -> Result<String, String> {
+    let w3 = match ICHttp::new(URL, None) {
+        Ok(v) => { Web3::new(v) },
+        Err(e) => { return Err(e.to_string()) },
+    };
+    let balance = w3.eth().balance(Address::from_str(&addr).unwrap(), None).await.map_err(|e| format!("get balance failed: {}", e))?;
+    Ok(format!("{}", balance))
+}
+
+// send tx
+#[update(name = "send_eth")]
+#[candid_method(update, rename = "send_eth")]
+async fn send_eth(to: String, value: u64) -> Result<String, String> {
+    // ecdsa key info
+    let derivation_path = vec![ic_cdk::caller().as_slice().to_vec()];
+
+    // get canister eth address
+    let from_addr = match get_eth_addr(None, None, "dfx_test_key".to_string()).await {
+        Ok(addr) => { "0x".to_string() + &hex::encode(addr.to_vec()) },
+        Err(e) => { return Err(e); },
+    };
+    // get canister the address tx count
+    let w3 = match ICHttp::new(URL, None) {
+        Ok(v) => { Web3::new(v) },
+        Err(e) => { return Err(e.to_string()) },
+    };
+    let tx_count = match w3.eth().transaction_count(Address::from_str(&from_addr).unwrap(), None).await {
+        Ok(v) => { 
+            // ic_cdk::println!("tx count: {}", v);
+            // u128::from_str_radix(&v.trim_start_matches("0x"), 16).unwrap()
+            v // U256
+        },
+        Err(e) => { return Err("get tx count error".into()); },
+    };
+    ic_cdk::println!("canister eth address {} tx count: {}", from_addr, tx_count);
+    // construct a transaction
+    let to = Address::from_str(&to).unwrap();
+    let tx = TransactionParameters {
+        to: Some(to),
+        nonce: Some(tx_count), // remember to fetch nonce first
+        value: U256::from(value),
+        gas_price: Some(U256::exp10(10)), // 10 gwei
+        gas: U256::from(21000),
+        ..Default::default()
+    };
+    // sign the transaction and get serialized transaction + signature
+    let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string() };
+    let signed_tx = w3.accounts().sign_transaction(tx, key_info, CHAIN_ID).await.expect("sign tx error");
+    match w3.eth().send_raw_transaction(signed_tx.raw_transaction).await {
+        Ok(txhash) => { 
+            ic_cdk::println!("txhash: {}", hex::encode(txhash.0));
+            Ok(format!("{}", hex::encode(txhash.0)))
+        },
+        Err(e) => { Err(e.to_string()) },
+    }
+}
 
 /* 
 // send tx
