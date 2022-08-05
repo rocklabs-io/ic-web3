@@ -6,7 +6,6 @@ use ic_cdk::export::{
 use std::str::FromStr;
 use libsecp256k1::{PublicKey, PublicKeyFormat};
 use ethereum_tx_sign::{EcdsaSig, keccak256_hash};
-// use crate::api::
 
 const ECDSA_SIGN_CYCLES : u64 = 10_000_000_000;
 pub type Address = [u8; 20];

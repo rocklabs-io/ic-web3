@@ -119,52 +119,6 @@ async fn send_eth(to: String, value: u64) -> Result<String, String> {
     }
 }
 
-/* 
-// send tx
-#[update(name = "send_eth")]
-#[candid_method(update, rename = "send_eth")]
-async fn send_eth(to: String, value: u64) -> Result<String, String> {
-    // ecdsa key info
-    let derivation_path = vec![ic_cdk::caller().as_slice().to_vec()];
-
-    // get canister eth address
-    let from_addr = match get_eth_addr(None, None, "dfx_test_key".to_string()).await {
-        Ok(addr) => { "0x".to_string() + &hex::encode(addr.to_vec()) },
-        Err(e) => { return Err(e); },
-    };
-    // get canister the address tx count
-    let w3 = match ICHttp::new(URL, None) {
-        Ok(v) => { Web3::new(v) },
-        Err(e) => { return Err(e.to_string()) },
-    };
-    let tx_count = match w3.eth().transaction_count(Address::from_str(&from_addr), None).await {
-        Ok(v) => { 
-            // ic_cdk::println!("tx count: {}", v);
-            // u128::from_str_radix(&v.trim_start_matches("0x"), 16).unwrap()
-            v // U256
-        },
-        Err(e) => { return Err(e); },
-    };
-    ic_cdk::println!("canister eth address {} tx count: {}", from_addr, tx_count);
-    // construct a transaction
-    let to = Address::from_str(&to);
-    let tx = TransactionRequest {
-        to: Some(to),
-        nonce: tx_count, // remember to fetch nonce first
-        value: Some(value),
-        gas_price: 20 * 10u128.pow(9), // 20 gwei
-        gas: 21000,
-        data: vec![]
-        ..Default::default()
-    };
-    // sign the transaction and get serialized transaction + signature
-    let signed_tx = ic_sign(tx, derivation_path, KEY_NAME.to_string()).await?;
-    match w3.eth().send_raw_transaction(signed_tx.raw_transaction).await {
-        Ok(txhash) => { Ok(txhash.to_string()) },
-        Err(e) => { Err(e.to_string()) },
-    }
-}*/
-
 // call a contract, query & update
 // #[update(name = "eth_call")]
 // #[candid_method(update, rename = "eth_call")]
