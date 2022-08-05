@@ -1,7 +1,5 @@
 use serde::{self, Deserialize, Serialize};
 use candid::CandidType;
-use std::collections::HashMap;
-use serde_json::Value;
 use jsonrpc_core::Request;
 use candid::Principal;
 

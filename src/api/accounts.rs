@@ -49,7 +49,7 @@ mod accounts_signing {
         },
     };
     use rlp::RlpStream;
-    use std::convert::TryInto;
+    // use std::convert::TryInto;
 
     const LEGACY_TX_ID: u64 = 0;
     const ACCESSLISTS_TX_ID: u64 = 1;
@@ -127,16 +127,6 @@ mod accounts_signing {
             key_info: KeyInfo,
             chain_id: u64,
         ) -> error::Result<SignedTransaction> {
-            macro_rules! maybe {
-                ($o: expr, $f: expr) => {
-                    async {
-                        match $o {
-                            Some(value) => Ok(value),
-                            None => $f.await,
-                        }
-                    }
-                };
-            }
 
             let gas_price = match tx.transaction_type {
                 Some(tx_type) if tx_type == U64::from(EIP1559_TX_ID) && tx.max_fee_per_gas.is_some() => {

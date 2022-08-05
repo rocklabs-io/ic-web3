@@ -7,7 +7,7 @@
     clippy::let_unit_value,
     clippy::match_wild_err_arm
 )]
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 // select! in WS transport
 #![recursion_limit = "256"]
 

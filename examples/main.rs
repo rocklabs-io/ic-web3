@@ -1,19 +1,14 @@
-use candid::{CandidType, Principal, candid_method, export_service};
-use ic_cdk::storage;
-use ic_cdk_macros::{self, heartbeat, post_upgrade, pre_upgrade, query, update};
-use serde::{Deserialize, Serialize};
-use serde_json::{self, json, Value};
-use std::cell::{RefCell, RefMut};
-use hex::{FromHex, ToHex};
+use candid::candid_method;
+use ic_cdk_macros::{self, update};
 use std::str::FromStr;
 
 use ic_web3::transports::ICHttp;
 use ic_web3::Web3;
-use ic_web3::ic::{get_eth_addr, get_public_key, KeyInfo};
+use ic_web3::ic::{get_eth_addr, KeyInfo};
 use ic_web3::{
     contract::{Contract, Options},
     ethabi::ethereum_types::U256,
-    types::{Address, TransactionRequest, TransactionParameters},
+    types::{Address, TransactionParameters},
 };
 
 // const url = "https://eth-mainnet.g.alchemy.com/v2/UZzgeJY-eQAovXu7aupjTx062NdxBNuB";
@@ -21,6 +16,7 @@ use ic_web3::{
 const URL: &str = "https://eth-goerli.g.alchemy.com/v2/0QCHDmgIEFRV48r1U1QbtOyFInib3ZAm";
 const CHAIN_ID: u64 = 5;
 const KEY_NAME: &str = "dfx_test_key";
+const TOKEN_ABI: &[u8] = include_bytes!("../src/contract/res/token.json");
 
 type Result<T, E> = std::result::Result<T, E>;
 
@@ -132,7 +128,7 @@ async fn token_balance(contract_addr: String, addr: String) -> Result<String, St
     let contract = Contract::from_json(
         w3.eth(),
         contract_address,
-        include_bytes!("../src/contract/res/token.json"),
+        TOKEN_ABI
     ).map_err(|e| format!("init contract failed: {}", e))?;
 
     let addr = Address::from_str(&addr).unwrap();
@@ -160,7 +156,7 @@ async fn send_token(token_addr: String, addr: String, value: u64) -> Result<Stri
     let contract = Contract::from_json(
         w3.eth(),
         contract_address,
-        include_bytes!("../src/contract/res/token.json"),
+        TOKEN_ABI
     ).map_err(|e| format!("init contract failed: {}", e))?;
 
     let canister_addr = get_eth_addr(None, None, KEY_NAME.to_string())

@@ -331,7 +331,6 @@ mod contract_signing {
     use super::*;
     use crate::{
         api::Accounts,
-        signing,
         types::{SignedTransaction, TransactionParameters},
     };
 

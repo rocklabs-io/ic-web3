@@ -6,7 +6,7 @@ use ic_cdk::export::{
 use std::str::FromStr;
 use crate::types::Address;
 use libsecp256k1::{PublicKey, PublicKeyFormat};
-use ethereum_tx_sign::{EcdsaSig, keccak256_hash};
+use ethereum_tx_sign::keccak256_hash;
 
 const ECDSA_SIGN_CYCLES : u64 = 10_000_000_000;
 // pub type Address = [u8; 20];
@@ -54,7 +54,8 @@ struct SignWithECDSAReply {
     pub signature: Vec<u8>,
 }
 
-// derivation_path: 4-byte big-endian encoding of an unsigned integer less than 2^31
+/// get public key
+/// derivation_path: 4-byte big-endian encoding of an unsigned integer less than 2^31
 pub async fn get_public_key(
     canister_id: Option<Principal>, 
     derivation_path: Vec<Vec<u8>>,
@@ -79,6 +80,7 @@ pub async fn get_public_key(
     Ok(res.public_key)
 }
 
+/// public key to address
 pub fn pubkey_to_address(pubkey: &[u8]) -> Result<Address, String> {
     let uncompressed_pubkey = match PublicKey::parse_slice(pubkey, Some(PublicKeyFormat::Compressed)) {
         Ok(key) => { key.serialize() },
@@ -90,6 +92,7 @@ pub fn pubkey_to_address(pubkey: &[u8]) -> Result<Address, String> {
 	Ok(Address::from(result))
 }
 
+/// get canister's eth address
 pub async fn get_eth_addr(
     canister_id: Option<Principal>, 
     derivation_path: Option<Vec<Vec<u8>>>,
@@ -167,6 +170,7 @@ pub async fn get_eth_addr(
 //     })
 // }
 
+/// use ic's threshold ecdsa to sign a message
 pub async fn ic_raw_sign(
     message: Vec<u8>, 
     derivation_path: Vec<Vec<u8>>, 
