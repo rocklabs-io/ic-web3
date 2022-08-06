@@ -1,7 +1,7 @@
 # ic-web3
 RPC client for canisters on the Internet Computer to access Ethereum networks, powered by the Internet Computer's threshold ECDSA signature and outbound http call features.
 
-[docs-rs-url]: https://docs.rs/ic-web3
+[![Crates.io](https://img.shields.io/crates/v/ic-web3)](https://crates.io/crates/ic-web3)
 
 ### Features
 
