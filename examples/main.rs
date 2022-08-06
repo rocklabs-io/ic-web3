@@ -34,9 +34,9 @@ async fn get_block(number: Option<u64>) -> Result<String, String> {
         None => { BlockId::Number(BlockNumber::Latest) },
     };
     let block = w3.eth().block(block_id).await.map_err(|e| format!("get block error: {}", e))?;
-    ic_cdk::println!("block: {:?}", block.unwrap());
+    ic_cdk::println!("block: {:?}", block.clone().unwrap());
 
-    Ok("done".into())
+    Ok(serde_json::to_string(&block.unwrap()).unwrap())
 }
 
 #[update(name = "get_eth_gas_price")]
