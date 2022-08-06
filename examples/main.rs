@@ -97,7 +97,7 @@ async fn batch_request() -> Result<String, String> {
     Ok("done".into())
 }
 
-// send tx
+// send tx to eth
 #[update(name = "send_eth")]
 #[candid_method(update, rename = "send_eth")]
 async fn send_eth(to: String, value: u64) -> Result<String, String> {
