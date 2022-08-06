@@ -8,7 +8,7 @@ use ic_web3::ic::{get_eth_addr, KeyInfo};
 use ic_web3::{
     contract::{Contract, Options},
     ethabi::ethereum_types::{U64, U256},
-    types::{Address, TransactionParameters, BlockId, BlockNumber, Block},
+    types::{Address, TransactionParameters, BlockId, BlockNumber},
 };
 
 // const url = "https://eth-mainnet.g.alchemy.com/v2/UZzgeJY-eQAovXu7aupjTx062NdxBNuB";

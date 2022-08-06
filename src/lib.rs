@@ -8,6 +8,11 @@
     clippy::match_wild_err_arm
 )]
 // #![warn(missing_docs)]
+#![allow(non_camel_case_types)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 // select! in WS transport
 #![recursion_limit = "256"]
 
