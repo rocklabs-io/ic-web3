@@ -1,4 +1,4 @@
-//! HTTP Transport
+//! IC HTTP Transport
 
 use crate::{
     error::{Error, Result, TransportError},

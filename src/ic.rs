@@ -1,3 +1,5 @@
+//! IC's threshold ECDSA related functions
+
 use ic_cdk::export::{
     candid::CandidType,
     serde::{Deserialize, Serialize},

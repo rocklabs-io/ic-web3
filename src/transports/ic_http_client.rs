@@ -1,3 +1,5 @@
+//! IC http client
+
 use serde::{self, Deserialize, Serialize};
 use candid::CandidType;
 use jsonrpc_core::Request;
