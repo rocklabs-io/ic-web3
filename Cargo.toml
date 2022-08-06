@@ -20,8 +20,7 @@ arrayvec = "0.7.1"
 derive_more = "0.99.1"
 ethabi = "17.0.0"
 ethereum-types = "0.13.0"
-libsecp256k1 = { git = "https://github.com/rocklabs-io/libsecp256k1", branch = "master" }
-ethereum-tx-sign = { git = "https://github.com/rocklabs-io/ethereum-tx-sign", branch = "master" }
+libsecp256k1 = "0.7.1"
 futures = "0.3.5"
 futures-timer = "3.0.2"
 hex = "0.4"
@@ -79,9 +78,9 @@ tokio = { version = "1.0", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["net"] }
 
 [features]
-# default = ["wasm"]
-# wasm = ["js-sys", "wasm-bindgen", "wasm-bindgen-futures", "futures-timer/wasm-bindgen", "rand", "getrandom"]
-# eip-1193 = ["wasm"]
+default = []
+wasm = ["js-sys", "wasm-bindgen", "wasm-bindgen-futures", "futures-timer/wasm-bindgen"]
+eip-1193 = ["wasm"]
 _http_base = ["reqwest", "bytes", "url", "base64", "headers"]
 http = ["_http_base"]
 http-tls = ["http", "reqwest/default-tls"]

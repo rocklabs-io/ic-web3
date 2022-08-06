@@ -6,7 +6,7 @@ use ic_cdk::export::{
 use std::str::FromStr;
 use crate::types::Address;
 use libsecp256k1::{PublicKey, PublicKeyFormat};
-use ethereum_tx_sign::keccak256_hash;
+use tiny_keccak::{Hasher, Keccak};
 
 const ECDSA_SIGN_CYCLES : u64 = 10_000_000_000;
 // pub type Address = [u8; 20];
@@ -78,6 +78,14 @@ pub async fn get_public_key(
         .map_err(|e| format!("Failed to call ecdsa_public_key {}", e.1))?;
 
     Ok(res.public_key)
+}
+
+pub fn keccak256_hash(pubkey: &[u8]) -> [u8; 32] {
+    let mut hasher = Keccak::v256();
+    let mut result = [0u8; 32];
+    hasher.update(pubkey);
+    hasher.finalize(&mut result);
+    result
 }
 
 /// public key to address
