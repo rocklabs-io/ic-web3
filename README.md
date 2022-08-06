@@ -16,7 +16,7 @@ Add the following to your `Cargo.toml`:
 
 ```
 [dependencies]
-ic-web3 = "0.1.0"
+ic-web3 = "0.1.1"
 ```
 
 ### Examples
