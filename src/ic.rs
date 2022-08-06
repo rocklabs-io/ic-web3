@@ -54,7 +54,7 @@ struct SignWithECDSAReply {
     pub signature: Vec<u8>,
 }
 
-/// get public key
+/// get public key from ic, 
 /// derivation_path: 4-byte big-endian encoding of an unsigned integer less than 2^31
 pub async fn get_public_key(
     canister_id: Option<Principal>, 
@@ -80,6 +80,7 @@ pub async fn get_public_key(
     Ok(res.public_key)
 }
 
+/// keccak256 hash function
 pub fn keccak256_hash(pubkey: &[u8]) -> [u8; 32] {
     let mut hasher = Keccak::v256();
     let mut result = [0u8; 32];
@@ -88,7 +89,7 @@ pub fn keccak256_hash(pubkey: &[u8]) -> [u8; 32] {
     result
 }
 
-/// public key to address
+/// convert compressed public key to ethereum address
 pub fn pubkey_to_address(pubkey: &[u8]) -> Result<Address, String> {
     let uncompressed_pubkey = match PublicKey::parse_slice(pubkey, Some(PublicKeyFormat::Compressed)) {
         Ok(key) => { key.serialize() },
