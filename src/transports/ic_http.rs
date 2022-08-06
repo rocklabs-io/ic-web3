@@ -34,7 +34,7 @@ struct Inner {
 }
 
 impl ICHttp {
-    /// Create new HTTP transport connecting to given URL.
+    /// Create new HTTP transport connecting to given URL, cycles: cycles amount to perform http call
     ///
     /// Note that the http [Client] automatically enables some features like setting the basic auth
     /// header or enabling a proxy from the environment. You can customize it with
@@ -62,7 +62,6 @@ impl ICHttp {
 
 // Id is only used for logging.
 async fn execute_rpc<T: DeserializeOwned>(client: &ICHttpClient, url: String, request: &Request, id: RequestId) -> Result<T> {
-    log::debug!("[id:{}] sending request: {:?}", id, serde_json::to_string(&request)?);
     let response = client
         .post(url, request, None)
         .await

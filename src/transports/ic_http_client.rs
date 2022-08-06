@@ -75,9 +75,6 @@ impl ICHttpClient {
                 // decode the result
                 let decoded_result: CanisterHttpResponsePayload =
                     candid::utils::decode_one(&result).expect("IC http_request failed!");
-                // let decoded_body = String::from_utf8(decoded_result.body)
-                    // .expect("Remote service response is not UTF-8 encoded.");
-                // Ok(decoded_body)
                 Ok(decoded_result.body)
             }
             Err((r, m)) => {
@@ -96,7 +93,7 @@ impl ICHttpClient {
                 value: "application/json".to_string(),
             },
         ];
-        // self.handler(self.request(url, HttpMethod::GET, request_headers, payload, cycles).await)
+
         self.request(url, HttpMethod::GET, request_headers, payload, cycles).await
     }
 
@@ -108,21 +105,7 @@ impl ICHttpClient {
             },
         ];
 
-        // self.handler(self.request(url, HttpMethod::POST, request_headers, payload, cycles).await)
         self.request(url, HttpMethod::POST, request_headers, payload, cycles).await
     }
-
-    // fn handler(&self, response: Result<String, String>) -> Result<String, String> {
-    //     match response {
-    //         Ok(res) => {
-    //             if res.find("error") != None {
-    //                 let e: JsonRpcError<HashMap<String, String>> = serde_json::from_str(res.as_str()).expect("response deserilize error");
-    //                 return Err(e.error.message);
-    //             }
-    //             return Ok(res);
-    //         },
-    //         Err(e) => { return Err(e); },
-    //     }
-    // }
 }
 
