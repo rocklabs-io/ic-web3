@@ -4,3 +4,4 @@ Cargo.lock
 .idea/
 .dfx
 *.old.did
+.env

@@ -39,7 +39,7 @@ use ic_web3::{
     types::{Address, TransactionParameters, BlockId, BlockNumber, Block},
 };
 
-const URL: &str = "https://goerli.infura.io/v3/93ca33aa55d147f08666ac82d7cc69fd";
+const URL: &str = "<GOERLI-RPC-URL>";
 const CHAIN_ID: u64 = 5;
 const KEY_NAME: &str = "dfx_test_key";
 const TOKEN_ABI: &[u8] = include_bytes!("../src/contract/res/token.json");
