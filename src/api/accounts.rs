@@ -127,29 +127,13 @@ mod accounts_signing {
             key_info: KeyInfo,
             chain_id: u64,
         ) -> error::Result<SignedTransaction> {
-            macro_rules! maybe {
-                ($o: expr, $f: expr) => {
-                    async {
-                        match $o {
-                            Some(value) => Ok(value),
-                            None => $f.await,
-                        }
-                    }
-                };
-            }
+
             let gas_price = match tx.transaction_type {
                 Some(tx_type) if tx_type == U64::from(EIP1559_TX_ID) && tx.max_fee_per_gas.is_some() => {
-                    tx.max_fee_per_gas
+                    tx.max_fee_per_gas.unwrap()
                 }
-                _ => tx.gas_price,
+                _ => tx.gas_price.unwrap(),
             };
-
-            let (gas_price, chain_id) = futures::future::try_join(
-                maybe!(gas_price, self.web3().eth().gas_price()),
-                maybe!(tx.chain_id.map(U256::from), self.web3().eth().chain_id()),
-            )
-            .await?;
-            let chain_id = chain_id.as_u64();
 
             let max_priority_fee_per_gas = match tx.transaction_type {
                 Some(tx_type) if tx_type == U64::from(EIP1559_TX_ID) => {
