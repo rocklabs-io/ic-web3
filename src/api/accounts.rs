@@ -127,7 +127,16 @@ mod accounts_signing {
             key_info: KeyInfo,
             chain_id: u64,
         ) -> error::Result<SignedTransaction> {
-
+            macro_rules! maybe {
+                ($o: expr, $f: expr) => {
+                    async {
+                        match $o {
+                            Some(value) => Ok(value),
+                            None => $f.await,
+                        }
+                    }
+                };
+            }
             let gas_price = match tx.transaction_type {
                 Some(tx_type) if tx_type == U64::from(EIP1559_TX_ID) && tx.max_fee_per_gas.is_some() => {
                     tx.max_fee_per_gas
@@ -135,18 +144,25 @@ mod accounts_signing {
                 _ => tx.gas_price,
             };
 
+            let (gas_price, chain_id) = futures::future::try_join(
+                maybe!(gas_price, self.web3().eth().gas_price()),
+                maybe!(tx.chain_id.map(U256::from), self.web3().eth().chain_id()),
+            )
+            .await?;
+            let chain_id = chain_id.as_u64();
+
             let max_priority_fee_per_gas = match tx.transaction_type {
                 Some(tx_type) if tx_type == U64::from(EIP1559_TX_ID) => {
-                    tx.max_priority_fee_per_gas.unwrap_or(gas_price.unwrap_or_default())
+                    tx.max_priority_fee_per_gas.unwrap_or(gas_price)
                 }
-                _ => gas_price.unwrap_or_default(),
+                _ => gas_price,
             };
 
             let tx = Transaction {
                 to: tx.to,
                 nonce: tx.nonce.unwrap(),
                 gas: tx.gas,
-                gas_price: gas_price.unwrap_or_default(),
+                gas_price,
                 value: tx.value,
                 data: tx.data.0,
                 transaction_type: tx.transaction_type,
@@ -398,13 +414,16 @@ mod accounts_signing {
                 Err(e) => { panic!("{}", e); },
             };
 
-            let v = 2 * chain_id + 35;
-            let mut r_arr = [0u8; 32];
-            let mut s_arr = [0u8; 32];
-            r_arr.copy_from_slice(&res[0..32]);
-            s_arr.copy_from_slice(&res[32..64]);
+            let v = if adjust_v_value {
+                2 * chain_id + 35
+            } else {
+                0
+            };
+    
+            let r_arr = H256::from_slice(&res[0..32]);
+            let s_arr = H256::from_slice(&res[32..64]);
             let sig = Signature {
-                v,
+                v: v.clone(),
                 r: r_arr.clone().into(),
                 s: s_arr.clone().into()
             };
@@ -414,7 +433,7 @@ mod accounts_signing {
         
             SignedTransaction {
                 message_hash: hash.into(),
-                v: 2 * chain_id + 35,
+                v,
                 r: r_arr.into(),
                 s: s_arr.into(),
                 raw_transaction: signed.into(),

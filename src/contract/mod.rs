@@ -391,25 +391,26 @@ mod contract_signing {
         //
         // This function will wait for block inclusion of the transaction before returning.
         // If you'd rather just submit transaction and receive it's hash, please use [`signed_call`] instead.
-        // pub async fn signed_call_with_confirmations(
-        //     &self,
-        //     func: &str,
-        //     params: impl Tokenize,
-        //     options: Options,
-        //     confirmations: usize,
-        //     key: impl signing::Key,
-        // ) -> crate::Result<TransactionReceipt> {
-        //     let poll_interval = time::Duration::from_secs(1);
-        //     let signed = self.sign(func, params, options, key).await?;
+        pub async fn signed_call_with_confirmations(
+            &self,
+            func: &str,
+            params: impl Tokenize,
+            options: Options,
+            confirmations: usize,
+            key_info: KeyInfo,
+            chain_id: u64,
+        ) -> crate::Result<TransactionReceipt> {
+            let poll_interval = time::Duration::from_secs(1);
+            let signed = self.sign(func, params, options, key_info, chain_id).await?;
 
-        //     confirm::send_raw_transaction_with_confirmation(
-        //         self.eth.transport().clone(),
-        //         signed.raw_transaction,
-        //         poll_interval,
-        //         confirmations,
-        //     )
-        //     .await
-        // }
+            confirm::send_raw_transaction_with_confirmation(
+                self.eth.transport().clone(),
+                signed.raw_transaction,
+                poll_interval,
+                confirmations,
+            )
+            .await
+        }
     }
 }
 
