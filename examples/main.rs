@@ -194,7 +194,17 @@ async fn send_token(token_addr: String, addr: String, value: u64) -> Result<Stri
         .transaction_count(canister_addr, None)
         .await
         .map_err(|e| format!("get tx count error: {}", e))?;
-    let options = Options::with(|op| { op.nonce = Some(tx_count) });
+    // get gas_price
+    let gas_price = w3.eth()
+        .gas_price()
+        .await
+        .map_err(|e| format!("get gas_price error: {}", e))?;
+    // legacy transaction type is still ok
+    let options = Options::with(|op| { 
+        op.nonce = Some(tx_count);
+        op.gas_price = Some(gas_price);
+        op.transaction_type = Some(U64::from(2)) //EIP1559_TX_ID
+    });
     let to_addr = Address::from_str(&addr).unwrap();
     let txhash = contract
         .signed_call("transfer", (to_addr, value,), options, key_info, CHAIN_ID)
