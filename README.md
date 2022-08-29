@@ -16,7 +16,7 @@ Add the following to your `Cargo.toml`:
 
 ```
 [dependencies]
-ic-web3 = "0.1.1"
+ic-web3 = { git = "https://github.com/rocklabs-io/ic-web3" }
 ```
 
 ### Examples
