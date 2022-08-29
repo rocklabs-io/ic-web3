@@ -39,16 +39,24 @@ impl ICHttp {
     /// Note that the http [Client] automatically enables some features like setting the basic auth
     /// header or enabling a proxy from the environment. You can customize it with
     /// [Http::with_client].
-    pub fn new(url: &str, cycles: Option<u64>) -> Result<Self> {
+    pub fn new(url: &str, max_resp: Option<u64>, cycles: Option<u64>) -> Result<Self> {
         Ok(
             Self {
-                client: ICHttpClient::new(cycles),
+                client: ICHttpClient::new(max_resp, cycles),
                 inner: Arc::new(Inner {
                     url: url.to_string(),
                     id: AtomicUsize::new(0),
                 }),
             }
         )
+    }
+
+    pub fn set_max_response_bytes(&mut self, v: u64) {
+        self.client.set_max_response_bytes(v);
+    }
+
+    pub fn set_cycles_per_call(&mut self, v: u64) {
+        self.client.set_cycles_per_call(v);
     }
 
     fn next_id(&self) -> RequestId {
@@ -63,7 +71,7 @@ impl ICHttp {
 // Id is only used for logging.
 async fn execute_rpc<T: DeserializeOwned>(client: &ICHttpClient, url: String, request: &Request, id: RequestId) -> Result<T> {
     let response = client
-        .post(url, request, None)
+        .post(url, request, None, None)
         .await
         .map_err(|err| Error::Transport(TransportError::Message(err)))?;
     helpers::arbitrary_precision_deserialize_workaround(&response).map_err(|err| {
