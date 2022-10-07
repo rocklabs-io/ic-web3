@@ -3,9 +3,11 @@
 use serde::{self, Deserialize, Serialize};
 use candid::CandidType;
 use jsonrpc_core::Request;
-use candid::Principal;
+use candid::{Principal, candid_method};
 use ic_cdk::api::management_canister::http_request::{
-    CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse, http_request,
+    CanisterHttpRequestArgument, HttpHeader, HttpMethod, 
+    HttpResponse, http_request,
+    TransformFunc, TransformType,
 };
 
 // #[derive(CandidType, Deserialize, Debug)]
@@ -40,6 +42,13 @@ impl ICHttpClient {
         self.cycles = v;
     }
 
+    #[candid_method(query, rename = "transform")]
+    fn transform(raw: HttpResponse) -> HttpResponse {
+        let mut transformed = raw;
+        transformed.headers = vec![];
+        transformed
+    }
+
     async fn request(
         &self, 
         url: String,
@@ -55,7 +64,7 @@ impl ICHttpClient {
             method: req_type,
             headers: req_headers,
             body: Some(serde_json::to_vec(&payload).unwrap()),
-            transform: None,
+            transform: Some(TransformType::from_transform_function(ICHttpClient::transform)),
         };
 
         match http_request(request).await {
