@@ -42,13 +42,6 @@ impl ICHttpClient {
         self.cycles = v;
     }
 
-    #[candid_method(query, rename = "transform")]
-    fn transform(raw: HttpResponse) -> HttpResponse {
-        let mut transformed = raw;
-        transformed.headers = vec![];
-        transformed
-    }
-
     async fn request(
         &self, 
         url: String,
@@ -64,7 +57,10 @@ impl ICHttpClient {
             method: req_type,
             headers: req_headers,
             body: Some(serde_json::to_vec(&payload).unwrap()),
-            transform: Some(TransformType::from_transform_function(ICHttpClient::transform)),
+            transform: Some(TransformType::Function(TransformFunc(candid::Func {
+                principal: ic_cdk::api::id(),
+                method: "transform".to_string(),
+            }))),
         };
 
         match http_request(request).await {

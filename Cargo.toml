@@ -1,6 +1,6 @@
 [package]
 name = "ic-web3"
-version = "0.1.4"
+version = "0.1.5"
 description = "Ethereum JSON-RPC client for IC canisters."
 homepage = "https://github.com/rocklabs-io/ic-web3"
 repository = "https://github.com/rocklabs-io/ic-web3"
