@@ -4,36 +4,19 @@ use serde::{self, Deserialize, Serialize};
 use candid::CandidType;
 use jsonrpc_core::Request;
 use candid::Principal;
+use ic_cdk::api::management_canister::http_request::{
+    CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse, http_request,
+};
 
-#[derive(CandidType, Clone, Deserialize, Debug, Eq, Hash, PartialEq, Serialize)]
-pub struct HttpHeader {
-    pub name: String,
-    pub value: String,
-}
-
-#[derive(Clone, Debug, PartialEq, CandidType, Eq, Hash, Serialize, Deserialize)]
-pub enum HttpMethod {
-    GET,
-    POST,
-    HEAD,
-}
-
-#[derive(CandidType, Deserialize, Debug)]
-pub struct CanisterHttpRequestArgs {
-    pub url: String,
-    pub max_response_bytes: Option<u64>,
-    pub headers: Vec<HttpHeader>,
-    pub body: Option<Vec<u8>>,
-    pub http_method: HttpMethod,
-    pub transform_method_name: Option<String>,
-}
-
-#[derive(CandidType, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct CanisterHttpResponsePayload {
-    pub status: u64,
-    pub headers: Vec<HttpHeader>,
-    pub body: Vec<u8>,
-}
+// #[derive(CandidType, Deserialize, Debug)]
+// pub struct CanisterHttpRequestArgs {
+//     pub url: String,
+//     pub max_response_bytes: Option<u64>,
+//     pub headers: Vec<HttpHeader>,
+//     pub body: Option<Vec<u8>>,
+//     pub http_method: HttpMethod,
+//     pub transform_method_name: Option<String>,
+// }
 
 #[derive(Clone, Debug)]
 pub struct ICHttpClient {
@@ -66,29 +49,18 @@ impl ICHttpClient {
         max_resp: Option<u64>,
         cycles: Option<u64>
     ) -> Result<Vec<u8>, String> {
-        let request = CanisterHttpRequestArgs {
+        let request = CanisterHttpRequestArgument {
             url: url.clone(),
-            http_method: req_type,
-            body: Some(serde_json::to_vec(&payload).unwrap()),
             max_response_bytes: if let Some(v) = max_resp { Some(v) } else { Some(self.max_response_bytes) },
-            transform_method_name: None,
+            method: req_type,
             headers: req_headers,
+            body: Some(serde_json::to_vec(&payload).unwrap()),
+            transform: None,
         };
-        let body = candid::utils::encode_one(&request).unwrap();
 
-        match ic_cdk::api::call::call_raw(
-            Principal::management_canister(),
-            "http_request",
-            &body[..],
-            if let Some(v) = cycles { v } else { self.cycles },
-        )
-        .await
-        {
-            Ok(result) => {
-                // decode the result
-                let decoded_result: CanisterHttpResponsePayload =
-                    candid::utils::decode_one(&result).expect("IC http_request failed!");
-                Ok(decoded_result.body)
+        match http_request(request).await {
+            Ok((result, )) => {
+                Ok(result.body)
             }
             Err((r, m)) => {
                 let message =
