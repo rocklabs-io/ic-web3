@@ -1,7 +1,7 @@
 //! Partial implementation of the `Accounts` namespace.
 
 use crate::{api::Namespace, signing, types::H256, Transport};
-use crate::ic::{KeyInfo, ic_raw_sign};
+use crate::ic::{KeyInfo, ic_raw_sign, recover_address};
 
 /// `Accounts` namespace
 #[derive(Debug, Clone)]
@@ -124,6 +124,7 @@ mod accounts_signing {
         pub async fn sign_transaction(
             &self,
             tx: TransactionParameters,
+            from: String,
             key_info: KeyInfo,
             chain_id: u64,
         ) -> error::Result<SignedTransaction> {
@@ -154,7 +155,7 @@ mod accounts_signing {
                 max_priority_fee_per_gas,
             };
 
-            let signed = tx.sign(key_info, chain_id).await;
+            let signed = tx.sign(from, key_info, chain_id).await;
             Ok(signed)
         }
 
@@ -386,7 +387,7 @@ mod accounts_signing {
         //     }
         // }
 
-        pub async fn sign(self, key_info: KeyInfo, chain_id: u64) -> SignedTransaction {
+        pub async fn sign(self, from: String, key_info: KeyInfo, chain_id: u64) -> SignedTransaction {
             let adjust_v_value = matches!(self.transaction_type.map(|t| t.as_u64()), Some(LEGACY_TX_ID) | None);
 
             let encoded = self.encode(chain_id, None);
@@ -398,10 +399,14 @@ mod accounts_signing {
                 Err(e) => { panic!("{}", e); },
             };
 
-            let v = if adjust_v_value {
-                2 * chain_id + 35
+            let v = if recover_address(hash.clone().to_vec(), res.clone(), 0) == from {
+                if adjust_v_value {
+                    2 * chain_id + 35 + 0
+                } else { 0 }
             } else {
-                0
+                if adjust_v_value {
+                    2 * chain_id + 35 + 1
+                } else { 1 }
             };
     
             let r_arr = H256::from_slice(&res[0..32]);

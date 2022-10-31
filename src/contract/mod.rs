@@ -15,7 +15,7 @@ use crate::{
 use std::{collections::HashMap, hash::Hash, time};
 
 pub mod deploy;
-pub mod ens;
+// pub mod ens;
 mod error;
 pub mod tokens;
 
@@ -340,6 +340,7 @@ mod contract_signing {
             func: &str,
             params: impl Tokenize,
             options: Options,
+            from: String,
             key_info: KeyInfo,
             chain_id: u64,
         ) -> crate::Result<SignedTransaction> {
@@ -368,7 +369,7 @@ mod contract_signing {
             if let Some(value) = options.value {
                 tx.value = value;
             }
-            accounts.sign_transaction(tx, key_info, chain_id).await
+            accounts.sign_transaction(tx, from, key_info, chain_id).await
         }
 
         /// Submit contract call transaction to the transaction pool.
@@ -380,10 +381,11 @@ mod contract_signing {
             func: &str,
             params: impl Tokenize,
             options: Options,
+            from: String,
             key_info: KeyInfo,
             chain_id: u64,
         ) -> crate::Result<H256> {
-            let signed = self.sign(func, params, options, key_info, chain_id).await?;
+            let signed = self.sign(func, params, options, from, key_info, chain_id).await?;
             self.eth.send_raw_transaction(signed.raw_transaction).await
         }
 
@@ -396,12 +398,13 @@ mod contract_signing {
             func: &str,
             params: impl Tokenize,
             options: Options,
+            from: String,
             confirmations: usize,
             key_info: KeyInfo,
             chain_id: u64,
         ) -> crate::Result<TransactionReceipt> {
             let poll_interval = time::Duration::from_secs(1);
-            let signed = self.sign(func, params, options, key_info, chain_id).await?;
+            let signed = self.sign(func, params, options, from, key_info, chain_id).await?;
 
             confirm::send_raw_transaction_with_confirmation(
                 self.eth.transport().clone(),
