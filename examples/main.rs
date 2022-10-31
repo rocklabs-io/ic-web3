@@ -129,7 +129,7 @@ async fn send_eth(to: String, value: u64) -> Result<String, String> {
     };
     // sign the transaction and get serialized transaction + signature
     let signed_tx = w3.accounts()
-        .sign_transaction(tx, key_info, CHAIN_ID)
+        .sign_transaction(tx, hex::encode(from_addr), key_info, CHAIN_ID)
         .await
         .map_err(|e| format!("sign tx error: {}", e))?;
     match w3.eth().send_raw_transaction(signed_tx.raw_transaction).await {
@@ -207,7 +207,7 @@ async fn send_token(token_addr: String, addr: String, value: u64) -> Result<Stri
     });
     let to_addr = Address::from_str(&addr).unwrap();
     let txhash = contract
-        .signed_call("transfer", (to_addr, value,), options, key_info, CHAIN_ID)
+        .signed_call("transfer", (to_addr, value,), options, hex::encode(canister_addr), key_info, CHAIN_ID)
         .await
         .map_err(|e| format!("token transfer failed: {}", e))?;
 
