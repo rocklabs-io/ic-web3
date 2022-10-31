@@ -91,8 +91,7 @@ pub async fn ic_raw_sign(
         curve: EcdsaCurve::Secp256k1,
         name: key_name,
     };
-    let ic_canister_id = "aaaaa-aa";
-    let ic = Principal::from_str(&ic_canister_id).unwrap();
+    let ic = Principal::management_canister();
 
     let request = SignWithEcdsaArgument {
         message_hash: message.clone(),
