@@ -7,7 +7,7 @@ use candid::{Principal, candid_method};
 use ic_cdk::api::management_canister::http_request::{
     CanisterHttpRequestArgument, HttpHeader, HttpMethod, 
     HttpResponse, http_request,
-    TransformFunc, TransformType,
+    TransformFunc, TransformContext, 
 };
 
 // #[derive(CandidType, Deserialize, Debug)]
@@ -57,10 +57,17 @@ impl ICHttpClient {
             method: req_type,
             headers: req_headers,
             body: Some(serde_json::to_vec(&payload).unwrap()),
-            transform: Some(TransformType::Function(TransformFunc(candid::Func {
-                principal: ic_cdk::api::id(),
-                method: "transform".to_string(),
-            }))),
+            // transform: Some(TransformType::Function(TransformFunc(candid::Func {
+            //     principal: ic_cdk::api::id(),
+            //     method: "transform".to_string(),
+            // }))),
+            transform: Some(TransformContext {
+                function: TransformFunc(candid::Func {
+                        principal: ic_cdk::api::id(),
+                        method: "transform".to_string(),
+                    }),
+                context: vec![],
+            }),
         };
 
         match http_request(request).await {
