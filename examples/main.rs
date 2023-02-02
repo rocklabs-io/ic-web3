@@ -100,7 +100,7 @@ async fn batch_request() -> Result<String, String> {
 async fn send_eth(to: String, value: u64) -> Result<String, String> {
     // ecdsa key info
     let derivation_path = vec![ic_cdk::id().as_slice().to_vec()];
-    let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string() };
+    let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string(), ecdsa_sign_cycles: None };
 
     // get canister eth address
     let from_addr = get_eth_addr(None, None, KEY_NAME.to_string())
@@ -173,7 +173,7 @@ async fn token_balance(contract_addr: String, addr: String) -> Result<String, St
 async fn send_token(token_addr: String, addr: String, value: u64) -> Result<String, String> {
     // ecdsa key info
     let derivation_path = vec![ic_cdk::id().as_slice().to_vec()];
-    let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string() };
+    let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string(), ecdsa_sign_cycles: None };
 
     let w3 = match ICHttp::new(URL, None, None) {
         Ok(v) => { Web3::new(v) },
