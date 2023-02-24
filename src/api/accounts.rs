@@ -394,7 +394,7 @@ mod accounts_signing {
 
             let hash = signing::keccak256(encoded.as_ref());
 
-            let res = match ic_raw_sign(hash.to_vec(), key_info.derivation_path, key_info.key_name).await {
+            let res = match ic_raw_sign(hash.to_vec(), key_info).await {
                 Ok(v) => { v },
                 Err(e) => { panic!("{}", e); },
             };

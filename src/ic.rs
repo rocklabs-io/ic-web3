@@ -25,6 +25,7 @@ use ic_cdk::api::management_canister::ecdsa::*;
 pub struct KeyInfo {
     pub derivation_path: Vec<Vec<u8>>,
     pub key_name: String,
+    pub ecdsa_sign_cycles: Option<u64>,
 }
 
 /// get public key from ic, 
@@ -81,25 +82,27 @@ pub async fn get_eth_addr(
 
 /// use ic's threshold ecdsa to sign a message
 pub async fn ic_raw_sign(
-    message: Vec<u8>, 
-    derivation_path: Vec<Vec<u8>>, 
-    key_name: String
+    message: Vec<u8>,
+    key_info: KeyInfo,
 ) -> Result<Vec<u8>, String> {
     assert!(message.len() == 32);
 
     let key_id = EcdsaKeyId {
         curve: EcdsaCurve::Secp256k1,
-        name: key_name,
+        name: key_info.key_name,
     };
     let ic = Principal::management_canister();
 
     let request = SignWithEcdsaArgument {
         message_hash: message.clone(),
-        derivation_path: derivation_path,
+        derivation_path: key_info.derivation_path,
         key_id,
     };
+
+    let ecdsa_sign_cycles = key_info.ecdsa_sign_cycles.unwrap_or(ECDSA_SIGN_CYCLES);
+
     let (res,): (SignWithEcdsaResponse,) =
-        ic_cdk::api::call::call_with_payment(ic, "sign_with_ecdsa", (request,), ECDSA_SIGN_CYCLES)
+        ic_cdk::api::call::call_with_payment(ic, "sign_with_ecdsa", (request,), ecdsa_sign_cycles)
             .await
             .map_err(|e| format!("Failed to call sign_with_ecdsa {}", e.1))?;
 
