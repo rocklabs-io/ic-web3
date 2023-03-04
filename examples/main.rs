@@ -1,5 +1,6 @@
 use candid::candid_method;
-use ic_cdk_macros::{self, update};
+use ic_cdk::api::management_canister::http_request::{HttpResponse, TransformArgs};
+use ic_cdk_macros::{self, update, query};
 use std::str::FromStr;
 
 use ic_web3::transports::ICHttp;
@@ -18,6 +19,12 @@ const KEY_NAME: &str = "dfx_test_key";
 const TOKEN_ABI: &[u8] = include_bytes!("../src/contract/res/token.json");
 
 type Result<T, E> = std::result::Result<T, E>;
+
+#[query(name = "transform")]
+#[candid_method(query, rename = "transform")]
+fn transform(response: TransformArgs) -> HttpResponse {
+    response.response
+}
 
 #[update(name = "get_block")]
 #[candid_method(update, rename = "get_block")]
@@ -216,6 +223,22 @@ async fn send_token(token_addr: String, addr: String, value: u64) -> Result<Stri
     Ok(format!("{}", hex::encode(txhash)))
 }
 
+// call a contract, transfer some token to addr
+#[update(name = "rpc_call")]
+#[candid_method(update, rename = "rpc_call")]
+async fn rpc_call(body: String) -> Result<String, String> {
+
+    let w3 = match ICHttp::new(URL, None, None) {
+        Ok(v) => { Web3::new(v) },
+        Err(e) => { return Err(e.to_string()) },
+    };
+
+    let res = w3.json_rpc_call(body.as_ref()).await.map_err(|e| format!("{}", e))?;
+
+    ic_cdk::println!("result: {}", res);
+
+    Ok(format!("{}", res))
+}
 
 fn main() {
     candid::export_service!();
