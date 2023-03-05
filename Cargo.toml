@@ -11,10 +11,6 @@ authors = ["Tomasz Drwięga <tomasz@parity.io>", "Rocklabs <hello@rocklabs.io>"]
 readme = "README.md"
 edition = "2018"
 
-[[bin]]
-name = "ic-web3"
-path = "examples/main.rs"
-
 [dependencies]
 arrayvec = "0.7.1"
 derive_more = "0.99.1"
