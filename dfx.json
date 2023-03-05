@@ -2,12 +2,20 @@
   "canisters": {
     "eth": {
       "candid": "examples/ic_web3.did",
-	    "package": "ic-web3",
-      "type": "rust",
-      "wasm": "target/wasm32-unknown-unknown/release/ic_web3_opt.wasm",
+      "type": "custom",
+      "wasm": "target/wasm32-unknown-unknown/release/examples/example_opt.wasm",
       "build": [
-        "cargo build --target wasm32-unknown-unknown --example main --release",
-        "ic-cdk-optimizer target/wasm32-unknown-unknown/release/ic_web3.wasm -o target/wasm32-unknown-unknown/release/ic_web3_opt.wasm"
+        "cargo build --target wasm32-unknown-unknown --example example --release",
+        "ic-cdk-optimizer target/wasm32-unknown-unknown/release/examples/example.wasm -o target/wasm32-unknown-unknown/release/examples/example_opt.wasm"
+      ]
+    },
+    "endpoint": {
+      "candid": "examples/endpoint.did",
+      "type": "custom",
+      "wasm": "target/wasm32-unknown-unknown/release/examples/endpoint_opt.wasm",
+      "build": [
+        "cargo build --target wasm32-unknown-unknown --example endpoint --release",
+        "ic-cdk-optimizer target/wasm32-unknown-unknown/release/examples/endpoint.wasm -o target/wasm32-unknown-unknown/release/examples/endpoint_opt.wasm"
       ]
     }
   },
