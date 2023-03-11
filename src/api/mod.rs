@@ -63,6 +63,11 @@ impl<T: Transport> Web3<T> {
         &self.transport
     }
 
+    /// set the max response bytes
+    pub fn set_max_response_bytes(&mut self, bytes: u64) {
+        self.transport.set_max_response_bytes(bytes)
+    }
+
     /// Access methods from custom namespace
     pub fn api<A: Namespace<T>>(&self) -> A {
         A::new(self.transport.clone())

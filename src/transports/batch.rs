@@ -79,6 +79,10 @@ where
 
         SingleResult(rx)
     }
+
+    fn set_max_response_bytes(&mut self, v: u64) {
+        self.transport.set_max_response_bytes(v);
+    }
 }
 
 /// Result of calling a single method that will be part of the batch.

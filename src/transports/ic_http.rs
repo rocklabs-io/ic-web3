@@ -51,10 +51,6 @@ impl ICHttp {
         )
     }
 
-    pub fn set_max_response_bytes(&mut self, v: u64) {
-        self.client.set_max_response_bytes(v);
-    }
-
     pub fn set_cycles_per_call(&mut self, v: u64) {
         self.client.set_cycles_per_call(v);
     }
@@ -100,6 +96,10 @@ impl Transport for ICHttp {
             let output: Output = execute_rpc(&client, url, &Request::Single(call), id).await?;
             helpers::to_result_from_output(output)
         })
+    }
+
+    fn set_max_response_bytes(&mut self, v: u64) {
+        self.client.set_max_response_bytes(v);
     }
 }
 
