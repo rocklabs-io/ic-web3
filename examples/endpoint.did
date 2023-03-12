@@ -6,6 +6,7 @@ type HttpResponse = record {
 };
 type Result = variant { Ok : text; Err : text };
 type RpcCallArgs = record {
+  url : opt text;
   max_response_bytes : opt nat64;
   body : text;
   cycles : opt nat64;
@@ -15,6 +16,7 @@ type TransformArgs = record { context : vec nat8; response : HttpResponse };
 service : (text, text) -> {
   getInfo : () -> (State) query;
   rpcCall : (RpcCallArgs) -> (Result);
+  rpcCallPrivate : (RpcCallArgs) -> (Result);
   setAPIKey : (text) -> (bool);
   setUrl : (text) -> (bool);
   transform : (TransformArgs) -> (HttpResponse) query;

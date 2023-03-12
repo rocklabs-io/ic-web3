@@ -14,6 +14,7 @@ struct State {
 
 #[derive(CandidType, Deserialize)]
 struct RpcCallArgs {
+    url: Option<String>,
     max_response_bytes: Option<u64>,
     cycles: Option<u64>,
     body: String,
@@ -85,14 +86,45 @@ async fn set_api_key(api_key: String) -> bool {
     true
 }
 
+/// rpcCallPrivate only owner can call
+#[update(name = "rpcCallPrivate", guard = "is_owner")]
+#[candid_method(update, rename = "rpcCallPrivate")]
+async fn rpc_call_private(args: RpcCallArgs) -> Result<String, String> {
+    let url_with_key = if let Some(url) = args.url {
+        // if url provided, use the url
+        url
+    } else {
+        // otherwise, use the url and key in this canister
+        let (url, api_key) = STATE.with(|s| {
+            let state = s.borrow();
+            (state.url.clone(), state.api_key.clone())
+        });
+        format!("{}/{}", url.trim_matches(|x| x == '/' || char::is_whitespace(x)), api_key.trim())
+    };
+    
+    let w3 = match ICHttp::new(url_with_key.as_str(), args.max_response_bytes, args.cycles) {
+        Ok(v) => { Web3::new(v) },
+        Err(e) => { return Err(e.to_string()) },
+    };
+
+    let res = w3.json_rpc_call(args.body.as_str()).await.map_err(|e| format!("{}", e))?;
+
+    ic_cdk::println!("result: {}", res);
+
+    Ok(format!("{}", res))
+}
+
+/// rpcCall anyone can call, but url must be provided
 #[update(name = "rpcCall")]
 #[candid_method(update, rename = "rpcCall")]
 async fn rpc_call(args: RpcCallArgs) -> Result<String, String> {
-    let (url, api_key) = STATE.with(|s| {
-        let state = s.borrow();
-        (state.url.clone(), state.api_key.clone())
-    });
-    let url_with_key = format!("{}/{}", url.trim_matches(|x| x == '/' || char::is_whitespace(x)), api_key.trim());
+    let url_with_key = if let Some(url) = args.url {
+        // if url provided, use the url
+        url
+    } else {
+        return Err("url must be provided".to_string())
+    };
+    
     let w3 = match ICHttp::new(url_with_key.as_str(), args.max_response_bytes, args.cycles) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },

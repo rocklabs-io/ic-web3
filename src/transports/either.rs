@@ -42,6 +42,13 @@ where
             Self::Right(ref b) => b.send(id, request).boxed(),
         }
     }
+
+    fn set_max_response_bytes(&mut self, v: u64) {
+        match *self {
+            Self::Left(ref mut a) => a.set_max_response_bytes(v),
+            Self::Right(ref mut b) => b.set_max_response_bytes(v),
+        }
+    }
 }
 
 impl<A, B, ABatch, BBatch> BatchTransport for Either<A, B>

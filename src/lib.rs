@@ -66,6 +66,9 @@ pub trait Transport: std::fmt::Debug + Clone {
         let (id, request) = self.prepare(method, params);
         self.send(id, request)
     }
+
+    /// set the max response bytes, do nothing by default
+    fn set_max_response_bytes(&mut self, bytes: u64) {}
 }
 
 /// A transport implementation supporting batch requests.
