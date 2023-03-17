@@ -128,7 +128,9 @@ Deploy the example canister:
 dfx deploy
 ```
 
+### Endpoint Canister
 
+The public endpoint canister is deployed at: `3ondx-siaaa-aaaam-abf3q-cai`, [code](./examples/endpoint.rs). You can access Ethereum Mainnet data by passing RPC calls to the endpoint canister.
 
 ### Acknowledgment
 
