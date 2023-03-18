@@ -6,7 +6,7 @@ use ic_cdk::export::{
     Principal,
 };
 use std::str::FromStr;
-use crate::types::Address;
+use crate::types::{Address, Recovery};
 use crate::signing;
 use libsecp256k1::{PublicKey, PublicKeyFormat, Message, Signature, RecoveryId, recover};
 
@@ -130,8 +130,11 @@ pub fn recover_address(msg: Vec<u8>, sig: Vec<u8>, rec_id: u8) -> String {
     }
 }
 
-/*
-pub fn verify(pubkey: Vec<u8>, message: Vec<u8>, signature: Vec<u8>) -> Bool {
-    unimplemented!()
+pub fn verify(addr: String, message: Vec<u8>, signature: Vec<u8>) -> bool {
+    let (sig, rec_id) = Recovery::from_raw_signature(message.clone(), signature)
+        .unwrap()
+        .as_signature()
+        .unwrap();
+    let rec_addr = recover_address(message, sig.to_vec(), rec_id as u8);
+    return rec_addr == addr;
 }
-*/
