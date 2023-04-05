@@ -23,23 +23,17 @@ use ic_cdk::api::management_canister::http_request::{
 #[derive(Clone, Debug)]
 pub struct ICHttpClient {
     pub max_response_bytes: u64,
-    pub cycles: u64,
 }
 
 impl ICHttpClient {
-    pub fn new(max_resp: Option<u64>, default_cycles: Option<u64>) -> Self {
+    pub fn new(max_resp: Option<u64>) -> Self {
         ICHttpClient {
             max_response_bytes: if let Some(v) = max_resp { v } else { 500_000 },
-            cycles: if let Some(v) = default_cycles { v } else { 1_000_000_000_000 },
         }
     }
 
     pub fn set_max_response_bytes(&mut self, v: u64) {
         self.max_response_bytes = v;
-    }
-
-    pub fn set_cycles_per_call(&mut self, v: u64) {
-        self.cycles = v;
     }
 
     async fn request(

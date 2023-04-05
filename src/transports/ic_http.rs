@@ -39,20 +39,16 @@ impl ICHttp {
     /// Note that the http [Client] automatically enables some features like setting the basic auth
     /// header or enabling a proxy from the environment. You can customize it with
     /// [Http::with_client].
-    pub fn new(url: &str, max_resp: Option<u64>, cycles: Option<u64>) -> Result<Self> {
+    pub fn new(url: &str, max_resp: Option<u64>) -> Result<Self> {
         Ok(
             Self {
-                client: ICHttpClient::new(max_resp, cycles),
+                client: ICHttpClient::new(max_resp),
                 inner: Arc::new(Inner {
                     url: url.to_string(),
                     id: AtomicUsize::new(0),
                 }),
             }
         )
-    }
-
-    pub fn set_cycles_per_call(&mut self, v: u64) {
-        self.client.set_cycles_per_call(v);
     }
 
     fn next_id(&self) -> RequestId {

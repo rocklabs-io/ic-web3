@@ -115,7 +115,7 @@ async fn json_rpc(payload: String, max_response_bytes: Option<u64>, target: RpcT
         return Err("url is empty".to_string())
     };
     
-    let w3 = match ICHttp::new(url_with_key.as_str(), max_response_bytes, None) {
+    let w3 = match ICHttp::new(url_with_key.as_str(), max_response_bytes) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
