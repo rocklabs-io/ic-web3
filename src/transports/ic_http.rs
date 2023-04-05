@@ -22,7 +22,6 @@ use std::{
 /// HTTP Transport
 #[derive(Clone, Debug)]
 pub struct ICHttp {
-    // Client is already an Arc so doesn't need to be part of inner.
     client: ICHttpClient,
     inner: Arc<Inner>,
 }
