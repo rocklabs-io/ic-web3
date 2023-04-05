@@ -4,20 +4,14 @@ type HttpResponse = record {
   body : vec nat8;
   headers : vec HttpHeader;
 };
+type Registered = record { chain_id : nat64; api_provider : text };
 type Result = variant { Ok : text; Err : text };
-type RpcCallArgs = record {
-  url : opt text;
-  max_response_bytes : opt nat64;
-  body : text;
-  cycles : opt nat64;
-};
-type State = record { url : text; owner : principal; api_key : text };
+type RpcTarget = variant { UrlWithApiKey : text; Registered : Registered };
 type TransformArgs = record { context : vec nat8; response : HttpResponse };
-service : (text, text) -> {
-  getInfo : () -> (State) query;
-  rpcCall : (RpcCallArgs) -> (Result);
-  rpcCallPrivate : (RpcCallArgs) -> (Result);
-  setAPIKey : (text) -> (bool);
-  setUrl : (text) -> (bool);
+service : () -> {
+  add_controller : (principal) -> ();
+  json_rpc : (text, opt nat64, RpcTarget) -> (Result);
+  register_api_key : (nat64, text, text) -> ();
+  registrations : () -> (vec Registered) query;
   transform : (TransformArgs) -> (HttpResponse) query;
 }
