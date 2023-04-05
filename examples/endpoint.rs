@@ -5,9 +5,6 @@ use ic_cdk::api::management_canister::http_request::{TransformArgs, HttpResponse
 use ic_cdk_macros::*;
 use ic_web3::{transports::ICHttp, Web3};
 
-// when the both request and response are max 2MB, the const of http calls is about 0.5T
-const MAX_CYCLES_REQUIRES: u128 = 500_000_000_000; // 0.5T
-
 #[derive(CandidType, Deserialize)]
 struct State {
     owner: Principal,
@@ -21,9 +18,11 @@ struct Registered {
     api_provider: String,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(CandidType, Deserialize, Clone)]
 enum RpcTarget {
+    #[serde(rename = "registered")]
     Registered(Registered),
+    #[serde(rename = "url_with_api_key")]
     UrlWithApiKey(String),
 }
 
@@ -95,16 +94,20 @@ async fn register_api_key(chain_id: u64, api_provider: String, url_with_key: Str
 // json rpc call
 #[update(name = "json_rpc")]
 #[candid_method(update, rename = "json_rpc")]
-async fn json_rpc(payload: String, max_response_bytes: Option<u64>, target: RpcTarget) -> Result<String, String> {
+async fn json_rpc(payload: String, max_response_bytes: u64, target: RpcTarget) -> Result<String, String> {
     let cycles_call = ic_cdk::api::call::msg_cycles_available128();
-    if cycles_call < MAX_CYCLES_REQUIRES {
-        return Err(format!("requires {} cycles, get {} cycles", MAX_CYCLES_REQUIRES, cycles_call));
+    let cycles_estimated = calculate_required_cycles(payload.clone(), max_response_bytes, target.clone());
+    if cycles_call < cycles_estimated {
+        return Err(format!("requires {} cycles, get {} cycles", cycles_estimated, cycles_call));
     }
+    // charge cycles
+    let cycles_charged = ic_cdk::api::call::msg_cycles_accept128(cycles_estimated);
+    ic_cdk::println!("cycles charged: {}", cycles_charged);
    
     let url_with_key = match target {
         RpcTarget::Registered(registered) => {
             STATE.with(|s| {
-                s.borrow().registered.get(&registered).cloned().unwrap_or("".to_string())
+                s.borrow().registered.get(&registered).cloned().unwrap_or_default()
             })
         }
         RpcTarget::UrlWithApiKey(url_with_api_key) => {
@@ -115,18 +118,12 @@ async fn json_rpc(payload: String, max_response_bytes: Option<u64>, target: RpcT
         return Err("url is empty".to_string())
     };
     
-    let w3 = match ICHttp::new(url_with_key.as_str(), max_response_bytes) {
+    let w3 = match ICHttp::new(url_with_key.as_str(), Some(max_response_bytes)) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
 
-    let cycles_before = ic_cdk::api::canister_balance128();
     let call_res = w3.json_rpc_call(payload.as_str()).await;
-    let cycles_after = ic_cdk::api::canister_balance128();
-
-    // add 0.001T cycles as buffer
-    let cycles_charged = ic_cdk::api::call::msg_cycles_accept128(cycles_before - cycles_after + 1_000_000_000u128);
-    ic_cdk::println!("cycles charged: {}", cycles_charged);
     
     let res = call_res.map_err(|e| format!("{}", e))?;
     ic_cdk::println!("result: {}", res);
@@ -155,6 +152,17 @@ fn is_authorized() -> Result<(), String> {
             Err("unauthorized".to_string())
         }
     })
+}
+
+// calculate the estimated cycles required
+// refer to https://internetcomputer.org/docs/current/developer-docs/gas-cost
+fn calculate_required_cycles(payload: String, max_response_bytes: u64, target: RpcTarget) -> u128 {
+    let arg_raw = candid::utils::encode_args((payload, max_response_bytes, target)).expect("Failed to encode arguments.");
+    // 1.2M is ingress message received
+    // 2K per byte received in an ingress message
+    // 400M is HTTPS outcall request
+    // assuming ingress message size is almost the same size of http request size, 100K cycles per byte
+    1_200_000u128 + 2_000u128 * arg_raw.len() as u128 + 400_000_000u128 + 100_000u128 * (arg_raw.len() as u128 + max_response_bytes as u128)
 }
 
 #[pre_upgrade]
