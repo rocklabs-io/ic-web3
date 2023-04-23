@@ -19,11 +19,14 @@ Add the following to your `Cargo.toml`:
 ic-web3 = { git = "https://github.com/rocklabs-io/ic-web3" }
 ```
 
+**Note:** It requires ipv6 compatibility for the RPC provider. For ipv6 compitable providers, you can refer to this [list](  https://forum.dfinity.org/t/long-term-r-d-integration-with-the-ethereum-network/9382/81).
+
+
 ### Examples
 
 Note: you should have dfx 0.11.2 or above.
 
-Please refer to [example](./examples/main.rs) for the complete example.
+Please refer to [example](./examples/example.rs) for the complete example.
 
 ```rust
 use candid::candid_method;
@@ -39,8 +42,8 @@ use ic_web3::{
     types::{Address, TransactionParameters, BlockId, BlockNumber, Block},
 };
 
-const URL: &str = "<GOERLI-RPC-URL>";
-const CHAIN_ID: u64 = 5;
+const URL: &str = "<RPC-URL>"; / https://ethereum.publicnode.com
+const CHAIN_ID: u64 = 1;
 const KEY_NAME: &str = "dfx_test_key";
 const TOKEN_ABI: &[u8] = include_bytes!("../src/contract/res/token.json");
 

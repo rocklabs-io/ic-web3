@@ -13,8 +13,8 @@ use ic_web3::{
 };
 
 // goerli testnet rpc url
-const URL: &str = "https://goerli.infura.io/v3/93ca33aa55d147f08666ac82d7cc69fd";
-const CHAIN_ID: u64 = 5;
+const URL: &str = "https://ethereum.publicnode.com";
+const CHAIN_ID: u64 = 1;
 const KEY_NAME: &str = "dfx_test_key";
 const TOKEN_ABI: &[u8] = include_bytes!("../src/contract/res/token.json");
 
