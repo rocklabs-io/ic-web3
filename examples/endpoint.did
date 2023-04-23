@@ -10,7 +10,7 @@ type RpcTarget = variant { url_with_api_key : text; registered : Registered };
 type TransformArgs = record { context : vec nat8; response : HttpResponse };
 service : () -> {
   add_controller : (principal) -> ();
-  json_rpc : (text, nat64, RpcTarget) -> (Result);
+  json_rpc : (text, RpcTarget, opt nat64) -> (Result);
   register_api_key : (nat64, text, text) -> ();
   registrations : () -> (vec Registered) query;
   transform : (TransformArgs) -> (HttpResponse) query;
