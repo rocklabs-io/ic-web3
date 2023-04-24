@@ -1,9 +1,12 @@
 use std::{cell::RefCell, collections::{HashSet, HashMap}};
 
 use candid::{CandidType, Deserialize, Principal, candid_method};
-use ic_cdk::api::management_canister::http_request::{TransformArgs, HttpResponse};
+use ic_cdk::api::management_canister::http_request::{TransformArgs, HttpResponse, CanisterHttpRequestArgument, HttpHeader, HttpMethod, TransformContext, TransformFunc, http_request};
 use ic_cdk_macros::*;
-use ic_web3::{transports::ICHttp, Web3};
+use jsonrpc_core::Call;
+
+const MIN_CYCLES_REQUIRED: u128 = 10_000_000_000; // 10B cycles minimum for each call
+const SERVICE_FEE: u128 = 100_000_000; // 0.1B cycles for service fee
 
 #[derive(CandidType, Deserialize)]
 struct State {
@@ -94,9 +97,14 @@ async fn register_api_key(chain_id: u64, api_provider: String, url_with_key: Str
 // json rpc call
 #[update(name = "json_rpc")]
 #[candid_method(update, rename = "json_rpc")]
-async fn json_rpc(payload: String, max_response_bytes: u64, target: RpcTarget) -> Result<String, String> {
+async fn json_rpc(payload: String, target: RpcTarget, max_response_bytes: Option<u64>) -> Result<String, String> {
     let cycles_call = ic_cdk::api::call::msg_cycles_available128();
-    let cycles_estimated = calculate_required_cycles(payload.clone(), max_response_bytes, target.clone());
+    if cycles_call < MIN_CYCLES_REQUIRED {
+        return Err(format!("requires at least 10B cycles, get {} cycles", cycles_call));
+    }
+    let request_body: Call = serde_json::from_str(payload.as_ref()).map_err(|e| format!("Fail to decode json body: {:?}", e))?;
+    let max_resp = max_response_bytes.unwrap_or(get_default_max_response_bytes_by_call(&request_body));
+    let cycles_estimated = calculate_required_cycles(payload.clone(), max_resp, target.clone());
     if cycles_call < cycles_estimated {
         return Err(format!("requires {} cycles, get {} cycles", cycles_estimated, cycles_call));
     }
@@ -117,18 +125,54 @@ async fn json_rpc(payload: String, max_response_bytes: u64, target: RpcTarget) -
     if url_with_key.is_empty() {
         return Err("url is empty".to_string())
     };
-    
-    let w3 = match ICHttp::new(url_with_key.as_str(), Some(max_response_bytes)) {
-        Ok(v) => { Web3::new(v) },
-        Err(e) => { return Err(e.to_string()) },
-    };
 
-    let call_res = w3.json_rpc_call(payload.as_str()).await;
+    let call_res = json_rpc_call(&request_body, url_with_key, max_resp).await;
     
     let res = call_res.map_err(|e| format!("{}", e))?;
     ic_cdk::println!("result: {}", res);
 
     Ok(format!("{}", res))
+}
+
+/// Call json rpc directly
+pub async fn json_rpc_call(request_body: &Call, url: String, max_response_bytes: u64) -> Result<String, String> {
+    let request_headers = vec![
+            HttpHeader {
+                name: "Content-Type".to_string(),
+                value: "application/json".to_string(),
+            },
+        ];
+    // call http
+    let request = CanisterHttpRequestArgument {
+        url: url,
+        max_response_bytes: Some(max_response_bytes),
+        method: HttpMethod::POST,
+        headers: request_headers,
+        body: Some(serde_json::to_vec(request_body).unwrap()),
+        transform: Some(TransformContext {
+            function: TransformFunc(candid::Func {
+                    principal: ic_cdk::api::id(),
+                    method: "transform".to_string(),
+                }),
+            context: vec![],
+        }),
+    };
+
+    match http_request(request).await {
+        Ok((result, )) => {
+            Ok(String::from_utf8_lossy(result.body.as_ref()).to_string())
+        }
+        Err((r, m)) => {
+            let message = format!("The http_request resulted into error. RejectionCode: {r:?}, Error: {m}");
+            ic_cdk::api::print(message.clone());
+            Err(message)
+        }
+    }
+}
+
+fn get_default_max_response_bytes_by_call(rpc_call: &Call) -> u64 {
+    // TODO define the max response bytes by call method
+    return 500_000;
 }
 
 fn is_owner() -> Result<(), String> {
@@ -162,7 +206,11 @@ fn calculate_required_cycles(payload: String, max_response_bytes: u64, target: R
     // 2K per byte received in an ingress message
     // 400M is HTTPS outcall request
     // assuming ingress message size is almost the same size of http request size, 100K cycles per byte
-    1_200_000u128 + 2_000u128 * arg_raw.len() as u128 + 400_000_000u128 + 100_000u128 * (arg_raw.len() as u128 + max_response_bytes as u128)
+    1_200_000u128 + 
+        2_000u128 * arg_raw.len() as u128 + 
+        400_000_000u128 + 
+        100_000u128 * (arg_raw.len() as u128 + max_response_bytes as u128) +
+        SERVICE_FEE
 }
 
 #[pre_upgrade]

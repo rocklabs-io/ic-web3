@@ -13,8 +13,8 @@ use ic_web3::{
 };
 
 // goerli testnet rpc url
-const URL: &str = "https://goerli.infura.io/v3/93ca33aa55d147f08666ac82d7cc69fd";
-const CHAIN_ID: u64 = 5;
+const URL: &str = "https://ethereum.publicnode.com";
+const CHAIN_ID: u64 = 1;
 const KEY_NAME: &str = "dfx_test_key";
 const TOKEN_ABI: &[u8] = include_bytes!("../src/contract/res/token.json");
 
@@ -29,7 +29,7 @@ fn transform(response: TransformArgs) -> HttpResponse {
 #[update(name = "get_block")]
 #[candid_method(update, rename = "get_block")]
 async fn get_block(number: Option<u64>) -> Result<String, String> {
-    let w3 = match ICHttp::new(URL, None, None) {
+    let w3 = match ICHttp::new(URL, None) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
@@ -46,7 +46,7 @@ async fn get_block(number: Option<u64>) -> Result<String, String> {
 #[update(name = "get_eth_gas_price")]
 #[candid_method(update, rename = "get_eth_gas_price")]
 async fn get_eth_gas_price() -> Result<String, String> {
-    let w3 = match ICHttp::new(URL, None, None) {
+    let w3 = match ICHttp::new(URL, None) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
@@ -68,7 +68,7 @@ async fn get_canister_addr() -> Result<String, String> {
 #[update(name = "get_eth_balance")]
 #[candid_method(update, rename = "get_eth_balance")]
 async fn get_eth_balance(addr: String) -> Result<String, String> {
-    let w3 = match ICHttp::new(URL, None, None) {
+    let w3 = match ICHttp::new(URL, None) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
@@ -79,7 +79,7 @@ async fn get_eth_balance(addr: String) -> Result<String, String> {
 #[update(name = "batch_request")]
 #[candid_method(update, rename = "batch_request")]
 async fn batch_request() -> Result<String, String> {
-    let http = ICHttp::new(URL, None, None).map_err(|e| format!("init ICHttp failed: {}", e))?;
+    let http = ICHttp::new(URL, None).map_err(|e| format!("init ICHttp failed: {}", e))?;
     let w3 = Web3::new(ic_web3::transports::Batch::new(http));
 
     let block_number = w3.eth().block_number();
@@ -114,7 +114,7 @@ async fn send_eth(to: String, value: u64) -> Result<String, String> {
         .await
         .map_err(|e| format!("get canister eth addr failed: {}", e))?;
     // get canister the address tx count
-    let w3 = match ICHttp::new(URL, None, None) {
+    let w3 = match ICHttp::new(URL, None) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
@@ -154,7 +154,7 @@ async fn send_eth(to: String, value: u64) -> Result<String, String> {
 async fn token_balance(contract_addr: String, addr: String) -> Result<String, String> {
     // goerli weth: 0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6
     // account: 0x9c9fcF808B82e5fb476ef8b7A1F5Ad61Dc597625
-    let w3 = match ICHttp::new(URL, None, None) {
+    let w3 = match ICHttp::new(URL, None) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
@@ -182,7 +182,7 @@ async fn send_token(token_addr: String, addr: String, value: u64) -> Result<Stri
     let derivation_path = vec![ic_cdk::id().as_slice().to_vec()];
     let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string(), ecdsa_sign_cycles: None };
 
-    let w3 = match ICHttp::new(URL, None, None) {
+    let w3 = match ICHttp::new(URL, None) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
@@ -228,7 +228,7 @@ async fn send_token(token_addr: String, addr: String, value: u64) -> Result<Stri
 #[candid_method(update, rename = "rpc_call")]
 async fn rpc_call(body: String) -> Result<String, String> {
 
-    let w3 = match ICHttp::new(URL, None, None) {
+    let w3 = match ICHttp::new(URL, None) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
