@@ -12,7 +12,6 @@ use ic_web3::{
     types::{Address, TransactionParameters, BlockId, BlockNumber},
 };
 
-// goerli testnet rpc url
 const URL: &str = "https://ethereum.publicnode.com";
 const CHAIN_ID: u64 = 1;
 const KEY_NAME: &str = "dfx_test_key";
