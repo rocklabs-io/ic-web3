@@ -1,5 +1,7 @@
 //! Ethereum Contract Interface
 
+use ethabi::Token;
+
 use crate::{
     api::{Eth, Namespace},
     confirm,
@@ -203,11 +205,8 @@ impl<T: Transport> Contract<T> {
     }
 
     /// Estimate gas required for this function call.
-    pub async fn estimate_gas<P>(&self, func: &str, params: P, from: Address, options: Options) -> Result<U256>
-    where
-        P: Tokenize,
-    {
-        let data = self.abi.function(func)?.encode_input(&params.into_tokens())?;
+    pub async fn estimate_gas(&self, func: &str, params: Vec<Token>, from: Address, options: Options) -> Result<U256> {
+        let data = self.abi.function(func)?.encode_input(&params)?;
         self.eth
             .estimate_gas(
                 CallRequest {
