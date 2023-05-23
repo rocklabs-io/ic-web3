@@ -9,12 +9,13 @@ use ic_web3::ic::{get_eth_addr, KeyInfo};
 use ic_web3::{
     contract::{Contract, Options},
     ethabi::ethereum_types::{U64, U256},
-    types::{Address, TransactionParameters, BlockId, BlockNumber},
+    types::{Address, TransactionParameters, BlockId},
 };
 
 const URL: &str = "https://ethereum.publicnode.com";
 const CHAIN_ID: u64 = 1;
-const KEY_NAME: &str = "dfx_test_key";
+//const KEY_NAME: &str = "dfx_test_key";
+const KEY_NAME: &str = "test_key_1";
 const TOKEN_ABI: &[u8] = include_bytes!("../src/contract/res/token.json");
 
 type Result<T, E> = std::result::Result<T, E>;
@@ -22,20 +23,19 @@ type Result<T, E> = std::result::Result<T, E>;
 #[query(name = "transform")]
 #[candid_method(query, rename = "transform")]
 fn transform(response: TransformArgs) -> HttpResponse {
-    response.response
+    let mut t = response.response;
+    t.headers = vec![];
+    t 
 }
 
 #[update(name = "get_block")]
 #[candid_method(update, rename = "get_block")]
-async fn get_block(number: Option<u64>) -> Result<String, String> {
+async fn get_block(number: u64) -> Result<String, String> {
     let w3 = match ICHttp::new(URL, None) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
-    let block_id = match number {
-        Some(id) => { BlockId::from(U64::from(id)) },
-        None => { BlockId::Number(BlockNumber::Latest) },
-    };
+    let block_id = BlockId::from(U64::from(number));
     let block = w3.eth().block(block_id).await.map_err(|e| format!("get block error: {}", e))?;
     ic_cdk::println!("block: {:?}", block.clone().unwrap());
 

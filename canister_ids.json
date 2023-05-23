@@ -1,5 +1,8 @@
 {
   "endpoint": {
     "ic": "3ondx-siaaa-aaaam-abf3q-cai"
+  },
+  "eth": {
+    "ic": "kq5hz-ziaaa-aaaam-abnda-cai"
   }
 }
