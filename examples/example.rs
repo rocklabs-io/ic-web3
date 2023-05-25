@@ -12,8 +12,9 @@ use ic_web3::{
     types::{Address, TransactionParameters, BlockId},
 };
 
-const URL: &str = "https://ethereum.publicnode.com";
-const CHAIN_ID: u64 = 1;
+//const URL: &str = "https://ethereum.publicnode.com";
+const URL: &str = "https://eth-goerli.g.alchemy.com/v2/0QCHDmgIEFRV48r1U1QbtOyFInib3ZAm";
+const CHAIN_ID: u64 = 5;
 //const KEY_NAME: &str = "dfx_test_key";
 const KEY_NAME: &str = "test_key_1";
 const TOKEN_ABI: &[u8] = include_bytes!("../src/contract/res/token.json");
@@ -64,6 +65,22 @@ async fn get_canister_addr() -> Result<String, String> {
     }
 }
 
+#[update(name = "get_tx_count")]
+#[candid_method(update, rename = "get_tx_count")]
+async fn get_tx_count(addr: String) -> Result<u64, String> {
+    let w3 = match ICHttp::new(URL, None) {
+        Ok(v) => { Web3::new(v) },
+        Err(e) => { return Err(e.to_string()) },
+    };
+    let from_addr = Address::from_str(&addr).unwrap();
+    let tx_count = w3.eth()
+        .transaction_count(from_addr, None)
+        .await
+        .map_err(|e| format!("get tx count error: {}", e))?;
+    Ok(tx_count.as_u64())
+}
+ 
+
 #[update(name = "get_eth_balance")]
 #[candid_method(update, rename = "get_eth_balance")]
 async fn get_eth_balance(addr: String) -> Result<String, String> {
@@ -103,7 +120,7 @@ async fn batch_request() -> Result<String, String> {
 // send tx to eth
 #[update(name = "send_eth")]
 #[candid_method(update, rename = "send_eth")]
-async fn send_eth(to: String, value: u64) -> Result<String, String> {
+async fn send_eth(to: String, value: u64, nonce: Option<u64>) -> Result<String, String> {
     // ecdsa key info
     let derivation_path = vec![ic_cdk::id().as_slice().to_vec()];
     let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string(), ecdsa_sign_cycles: None };
@@ -117,10 +134,15 @@ async fn send_eth(to: String, value: u64) -> Result<String, String> {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
     };
-    let tx_count = w3.eth()
-        .transaction_count(from_addr, None)
-        .await
-        .map_err(|e| format!("get tx count error: {}", e))?;
+    let tx_count: U256 = if let Some(count) = nonce {
+        count.into() 
+    } else {
+        let v = w3.eth()
+            .transaction_count(from_addr, None)
+            .await
+            .map_err(|e| format!("get tx count error: {}", e))?;
+        v
+    };
         
     ic_cdk::println!("canister eth address {} tx count: {}", hex::encode(from_addr), tx_count);
     // construct a transaction
@@ -129,7 +151,7 @@ async fn send_eth(to: String, value: u64) -> Result<String, String> {
         to: Some(to),
         nonce: Some(tx_count), // remember to fetch nonce first
         value: U256::from(value),
-        gas_price: Some(U256::exp10(10)), // 10 gwei
+        gas_price: Some(U256::from(100_000_000_000u64)), // 100 gwei
         gas: U256::from(21000),
         ..Default::default()
     };
@@ -143,7 +165,7 @@ async fn send_eth(to: String, value: u64) -> Result<String, String> {
             ic_cdk::println!("txhash: {}", hex::encode(txhash.0));
             Ok(format!("{}", hex::encode(txhash.0)))
         },
-        Err(e) => { Err(e.to_string()) },
+        Err(_e) => { Ok(hex::encode(signed_tx.message_hash)) },
     }
 }
 
@@ -176,11 +198,15 @@ async fn token_balance(contract_addr: String, addr: String) -> Result<String, St
 // call a contract, transfer some token to addr
 #[update(name = "send_token")]
 #[candid_method(update, rename = "send_token")]
-async fn send_token(token_addr: String, addr: String, value: u64) -> Result<String, String> {
+async fn send_token(token_addr: String, addr: String, value: u64, nonce: Option<u64>) -> Result<String, String> {
     // ecdsa key info
     let derivation_path = vec![ic_cdk::id().as_slice().to_vec()];
     let key_info = KeyInfo{ derivation_path: derivation_path, key_name: KEY_NAME.to_string(), ecdsa_sign_cycles: None };
 
+    // get canister eth address
+    let from_addr = get_eth_addr(None, None, KEY_NAME.to_string())
+        .await
+        .map_err(|e| format!("get canister eth addr failed: {}", e))?;
     let w3 = match ICHttp::new(URL, None) {
         Ok(v) => { Web3::new(v) },
         Err(e) => { return Err(e.to_string()) },
@@ -196,10 +222,16 @@ async fn send_token(token_addr: String, addr: String, value: u64) -> Result<Stri
         .await
         .map_err(|e| format!("get canister eth addr failed: {}", e))?;
     // add nonce to options
-    let tx_count = w3.eth()
-        .transaction_count(canister_addr, None)
-        .await
-        .map_err(|e| format!("get tx count error: {}", e))?;
+    let tx_count: U256 = if let Some(count) = nonce {
+        count.into() 
+    } else {
+        let v = w3.eth()
+            .transaction_count(from_addr, None)
+            .await
+            .map_err(|e| format!("get tx count error: {}", e))?;
+        v
+    };
+     
     // get gas_price
     let gas_price = w3.eth()
         .gas_price()
